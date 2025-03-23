@@ -1,0 +1,5159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>初级维修电工理论考试系统</title>
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        :root {
+            --primary-color: #6c8ebf;
+            --secondary-color: #f0f5ff;
+            --accent-color: #4CAF50;
+            --exam-active-color: #90EE90;
+        }
+
+        body {
+            margin: 0;
+            font-family: '微软雅黑', sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+        }
+
+        /* 所有原有CSS样式完整保留 */
+        .header {
+            background: var(--primary-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: relative;
+        }
+
+        .control-buttons button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--secondary-color);
+            transition: 0.3s;
+        }
+
+        .control-buttons button:hover:not(:disabled) {
+            background: #ffffff;
+        }
+
+        .control-buttons button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .control-buttons button.exam-active {
+            background: var(--exam-active-color);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .question-list {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .question-nav {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .question-nav button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .question-nav button.answered {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .question-nav button.review {
+            background: #ff4444;
+            color: white;
+        }
+
+        .question-area {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .options {
+            margin: 20px 0;
+        }
+
+        .option-item {
+            margin: 10px 0;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .option-item:hover {
+            background: var(--secondary-color);
+        }
+
+        .footer {
+            background: var(--primary-color);
+            padding: 10px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .student-info {
+            order: -1;
+            margin-right: auto;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .prev-next-buttons {
+            margin-top: 20px;
+        }
+
+        .prev-next-buttons button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--secondary-color);
+            transition: 0.3s;
+        }
+
+        .prev-next-buttons button:hover {
+            background: #ffffff;
+        }
+
+        .correct-answer {
+            color: #4CAF50;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+        }
+
+        .question-nav button.correct {
+            background: #4CAF50 !important;
+            color: white;
+        }
+
+        .question-nav button.incorrect {
+            background: #ff4444 !important;
+            color: white;
+        }
+
+        #answered-display {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-weight: bold;
+        }
+
+        #remaining-time {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: red;
+            font-weight: bold;
+        }
+
+        #remaining-questions {
+            color: red;
+        }
+
+        #admin-panel {
+            display: none;
+            padding: 20px;
+        }
+
+        #scores-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        #scores-table th, 
+        #scores-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #scores-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #login-modal .admin-field {
+            display: none;
+        }
+
+        .admin-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #login-modal > div {
+            width: 600px !important;
+            min-height: 400px !important;
+            padding: 40px !important;
+            border-radius: 15px !important;
+        }
+        
+        #login-modal h2 {
+            font-size: 28px !important;
+            margin-bottom: 40px !important;
+        }
+
+        #login-modal select {
+            font-size: 18px !important;
+            padding: 15px !important;
+            border: 2px solid #6c8ebf !important;
+        }
+
+        #login-modal input {
+            font-size: 18px !important;
+            padding: 15px !important;
+            margin: 20px 0 !important;
+            border: 2px solid #ddd !important;
+        }
+
+        #login-modal button {
+            background-color: #add8e6 !important;
+            color: #00008b !important;
+            font-size: 20px !important;
+            padding: 18px 0 !important;
+            border-radius: 8px !important;
+            transition: all 0.3s !important;
+        }
+
+        #login-modal button:hover {
+            background-color: #87ceeb !important;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 原网页所有HTML结构完整保留 -->
+    <div id="answered-display" style="display: none;">
+        已答题目：<span id="answered-count">0</span>
+    </div>
+
+    <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center;">
+        <div style="background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <h2>系统登录</h2>
+            <select id="user-type" onchange="toggleLoginFields()">
+                <option value="student">考生登录</option>
+                <option value="admin">管理员登录</option>
+            </select>
+            <div id="student-fields">
+                <input type="text" id="username" placeholder="准考证号">
+                <input type="text" id="name" placeholder="考生姓名">
+            </div>
+            <div id="admin-fields" class="admin-field">
+                <input type="text" id="admin-account" placeholder="管理员账号">
+                <input type="password" id="admin-password" placeholder="管理员密码">
+            </div>
+            <button onclick="login()">登录</button>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <h2>考试管理系统</h2>
+        <div class="admin-controls">
+            <button onclick="exportCSV()">导出成绩CSV</button>
+            <button onclick="deleteAllScores()" style="background-color: #ff4444; color: white;">删除所有成绩</button>
+        </div>
+        <table id="scores-table">
+            <thead>
+                <tr>
+                    <th>准考证号</th>
+                    <th>考生姓名</th>
+                    <th>考试成绩</th>
+                    <th>考试时间</th>
+                </tr>
+            </thead>
+            <tbody id="scores-body"></tbody>
+        </table>
+        <button onclick="location.reload()" style="margin-top:20px;">返回首页</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="student-info">
+                考生姓名：<span id="student-name">未登录</span> | 准考证号：<span id="student-id">未登录</span> | 剩余题数：<span id="remaining-questions">0/0</span>
+            </div>
+            <div id="remaining-time">00:00:00</div>
+            <div class="control-buttons">
+                <button onclick="resetExam()">返回</button>
+                <button id="btn-import" onclick="importQuestions()">题库导入</button>
+                <button id="btn-generate" onclick="generatePaper()">智能组卷</button>
+                <button id="btn-start" onclick="startExam()">开始考试</button>
+                <button id="btn-submit" onclick="submitExam()" disabled>交卷</button>
+                <input type="number" id="exam-time" placeholder="设置时间(分钟)" style="width: 120px;">
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="question-list">
+                <h3>题目列表</h3>
+                <div class="question-nav" id="question-nav"></div>
+            </div>
+            <div class="question-area">
+                <div class="question-content" id="question-content"></div>
+                <div class="prev-next-buttons">
+                    <button onclick="prevQuestion()">上一题</button>
+                    <button onclick="nextQuestion()">下一题</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>技术支持：电工考试系统 v1.1</div>
+        </div>
+    </div>
+
+    <!-- 原JavaScript代码完整保留 -->
+    <script>
+        // ======== PWA安装引导 ========
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            if(document.getElementById('installBtn')) return;
+            
+            const installBtn = document.createElement('button');
+            installBtn.id = 'installBtn';
+            installBtn.innerHTML = '📱 安装为APP';
+            installBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 24px;
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                cursor: pointer;
+                z-index: 9999;
+            `;
+            installBtn.onclick = installPWA;
+            document.body.appendChild(installBtn);
+        }
+
+        function installPWA() {
+            if(deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choiceResult => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installBtn').remove();
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // ======== Service Worker注册 ========
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('ServiceWorker 注册成功'))
+                    .catch(err => console.log('ServiceWorker 注册失败: ', err));
+            });
+        }
+
+        // ======== 原考试系统JavaScript逻辑 ========
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let answers = [];
+        let examStarted = false;
+        let examSubmitted = false;
+        let timer;
+        let timeLeft = 0;
+        let studentId = '';
+        let studentName = '';
+        let showAnswers = true;
+        const ADMIN_ACCOUNT = 'admin';
+        const ADMIN_PASSWORD = 'admin123';
+
+        const btnStart = document.getElementById('btn-start');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnImport = document.getElementById('btn-import');
+        const btnGenerate = document.getElementById('btn-generate');
+
+        function toggleLoginFields() {
+            const userType = document.getElementById('user-type').value;
+            document.getElementById('student-fields').style.display = userType === 'student' ? 'block' : 'none';
+            document.getElementById('admin-fields').style.display = userType === 'admin' ? 'block' : 'none';
+        }
+
+        function resetExam() {
+            document.getElementById('login-modal').style.display = 'flex';
+            document.getElementById('student-id').textContent = '未登录';
+            document.getElementById('student-name').textContent = '未登录';
+            document.getElementById('remaining-questions').textContent = '0/0';
+            document.getElementById('answered-display').style.display = 'none';
+            clearInterval(timer);
+            questions = [];
+            answers = [];
+            examStarted = false;
+            examSubmitted = false;
+            btnStart.disabled = false;
+            btnSubmit.disabled = true;
+            btnImport.disabled = false;
+            btnGenerate.disabled = false;
+            btnStart.classList.remove('exam-active');
+        }
+
+        function login() {
+            const userType = document.getElementById('user-type').value;
+            
+            if (userType === 'student') {
+                studentId = document.getElementById('username').value;
+                studentName = document.getElementById('name').value;
+                if (studentId && studentName) {
+                    document.getElementById('student-id').textContent = studentId;
+                    document.getElementById('student-name').textContent = studentName;
+                    document.getElementById('login-modal').style.display = 'none';
+                } else {
+                    alert('请输入准考证号和姓名');
+                }
+            } else {
+                const account = document.getElementById('admin-account').value;
+                const password = document.getElementById('admin-password').value;
+                if (account === ADMIN_ACCOUNT && password === ADMIN_PASSWORD) {
+                    document.getElementById('login-modal').style.display = 'none';
+                    document.querySelector('.container').style.display = 'none';
+                    document.getElementById('admin-panel').style.display = 'block';
+                    loadScores();
+                } else {
+                    alert('管理员账号或密码错误');
+                }
+            }
+        }
+
+        function deleteAllScores() {
+            if (confirm('确定要删除所有考生成绩吗？此操作不可恢复！')) {
+                localStorage.removeItem('examScores');
+                loadScores();
+                alert('所有成绩已成功删除');
+            }
+        }
+
+        function loadScores() {
+            const scores = JSON.parse(localStorage.getItem('examScores')) || [];
+            const tbody = document.getElementById('scores-body');
+            tbody.innerHTML = '';
+            scores.forEach(score => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${score.id}</td>
+                    <td>${score.name}</td>
+                    <td>${score.score}</td>
+                    <td>${new Date(score.timestamp).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportCSV() {
+            const scores = JSON.parse(localStorage.getItem('examScores')) || [];
+            const csvContent = [
+                ['准考证号', '考生姓名', '考试成绩', '考试时间'].join(','),
+                ...scores.map(score => [
+                    score.id,
+                    score.name,
+                    score.score,
+                    new Date(score.timestamp).toLocaleString()
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `考试成绩_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        window.onload = function() {
+            document.getElementById('login-modal').style.display = 'flex';
+        };
+
+        function importQuestions() {
+            questions = [
+               {
+        id: 1,
+        type: '单选题',
+        question: '在市场经济条件下，职业道德具有(　　)的社会功能。',
+        options: ['A. 鼓励人们自由选择职业', 'B. 遏制牟利最大化', 'C. 促进人们的行为规范化', 'D. 最大限度地克服人们受利益驱动'],
+        answer: 'C'
+    },
+    {
+        id: 2,
+        type: '单选题',
+        question: '在企业的经营活动中，下列选项中的(　　)不是职业道德功能的表现。',
+        options: ['A. 激励作用', 'B. 决策能力', 'C. 规范行为', 'D. 遵纪守法'],
+        answer: 'B'
+    },
+    {
+        id: 3,
+        type: '单选题',
+        question: '职业道德通过(　　)，起着增强企业凝聚力的作用。',
+        options: ['A. 协调员工之间的关系', 'B. 增加职工福利', 'C. 为员工创造发展空间', 'D. 调节企业与社会的关系'],
+        answer: 'A'
+    },
+    {
+        id: 4,
+        type: '单选题',
+        question: '爱岗敬业的具体要求是(　　)。',
+        options: ['A. 看效益决定是否爱岗', 'B. 转变择业观念', 'C. 提高职业技能', 'D. 增强把握择业的机遇意识'],
+        answer: 'C'
+    },
+    {
+        id: 5,
+        type: '单选题',
+        question: '下列事项中属于办事公道的是(　　)。',
+        options: ['A. 顾全大局，一切听从上级', 'B. 大公无私，拒绝亲戚求助', 'C. 知人善任，努力培养知己', 'D. 坚持原则，不计个人得失'],
+        answer: 'D'
+    },
+    {
+        id: 6,
+        type: '单选题',
+        question: '下列关于勤劳节俭的论述中，不正确的选项是(　　)。',
+        options: ['A. 企业可提倡勤劳，但不宜提倡节俭', 'B. “一分钟应看成是八分钟”', 'C. 勤劳节俭符合可持续发展的要求', 'D. “节省一块钱，就等于净赚一块钱”'],
+        answer: 'A'
+    },
+    {
+        id: 7,
+        type: '单选题',
+        question: '在企业的活动中，(　　)不符合平等尊重的要求。',
+        options: ['A. 根据员工技术专长进行分工', 'B. 对待不同服务对象采取一视同仁的服务态度', 'C. 师徒之间要平等和互相尊重', 'D. 取消员工之间的一切差别'],
+        answer: 'D'
+    },
+    {
+        id: 8,
+        type: '单选题',
+        question: '企业创新要求员工努力做到(　　)。',
+        options: ['A. 不能墨守成规，但也不能标新立异', 'B. 大胆地破除现有的结论，自创理论体系', 'C. 大胆地试大胆地闯，敢于提出新问题', 'D. 激发人的灵感，遏制冲动和情感'],
+        answer: 'C'
+    },
+    {
+        id: 9,
+        type: '单选题',
+        question: '电路的作用是实现能量的(　　)和转换、信号的传递和处理。',
+        options: ['A. 连接', 'B. 传输', 'C. 控制', 'D. 传送'],
+        answer: 'B'
+    },
+    {
+        id: 10,
+        type: '单选题',
+        question: '电阻器反映导体对(　　)起阻碍作用的大小，简称电阻。',
+        options: ['A. 电压', 'B. 电动势', 'C. 电流', 'D. 电阻率'],
+        answer: 'C'
+    },
+    {
+        id: 11,
+        type: '单选题',
+        question: '(　　)反映了在不含电源的一段电路中，电流与这段电路两端的电压及电阻的关系。',
+        options: ['A. 欧姆定律', 'B. 楞次定律', 'C. 部分电路欧姆定律', 'D. 全欧姆定律'],
+        answer: 'C'
+    },
+    {
+        id: 12,
+        type: '单选题',
+        question: '单位面积上垂直穿过的磁力线数叫作(　　)。',
+        options: ['A. 磁通或磁通量', 'B. 磁导率', 'C. 磁感应强度', 'D. 磁场强度'],
+        answer: 'C'
+    },
+    {
+        id: 13,
+        type: '单选题',
+        question: '当直导体和磁场垂直时，与直导体在磁场中的有效长度、所在位置的磁感应强度成(　　)。',
+        options: ['A. 相等', 'B. 相反', 'C. 正比', 'D. 反比'],
+        answer: 'C'
+    },
+    {
+        id: 14,
+        type: '单选题',
+        question: '当线圈中的磁通减小时，感应电流产生的磁通与原磁通方向(　　)。',
+        options: ['A. 正比', 'B. 反比', 'C. 相反', 'D. 相同'],
+        answer: 'D'
+    },
+{
+    "id": 15,
+    "type": "单选题",
+    "question": "正弦量的平均值与最大值之间的关系正确的是(　　)。",
+    "options": ["A. E= Em/1.44", "B. U= Um/1.44", "C. Iav=2/π*Em", "D. Eav=Im/1.44"],
+    "answer": "C"
+  },
+  {
+    "id": 16,
+    "type": "单选题",
+    "question": "电容两端的电压滞后电流(　　)。",
+    "options": ["A. 30°", "B. 90°", "C. 180°", "D. 360°"],
+    "answer": "B"
+  },
+  {
+    "id": 17,
+    "type": "单选题",
+    "question": "每相绕组两端的电压称相电压。它们的相位(　　)。",
+    "options": ["A. 45°", "B. 90°", "C. 120°", "D. 180°"],
+    "answer": "C"
+  },
+  {
+    "id": 18,
+    "type": "单选题",
+    "question": "变压器具有改变(　　)的作用。",
+    "options": ["A. 交变电压", "B. 交变电流", "C. 变换阻抗", "D. 以上都是"],
+    "answer": "D"
+  },
+{
+    "id": 19,
+    "type": "单选题",
+    "question": "将变压器的一次侧绕组接交流电源，二次侧绕组与负载连接，这种运行方式称为(　　)运行。",
+    "options": ["A. 空载", "B. 过载", "C. 负载", "D. 满载"],
+    "answer": "C"
+  },
+  {
+    "id": 20,
+    "type": "单选题",
+    "question": "在图中所示放大电路，已知Ucc=6V、Rc=2KΩ、RB=200Kω、=50。若RB减小，三极管工作在(　　)状态。",
+    "options": ["A. 放大", "B. 截止", "C. 饱和", "D. 导通"],
+    "answer": "C"
+  },
+  {
+    "id": 21,
+    "type": "单选题",
+    "question": "维修电工以电气原理图, 安装接线图和(　　)最为重要。",
+    "options": ["A. 展开接线图", "B. 剖面图", "C. 平面布置图", "D. 立体图"],
+    "answer": "C"
+  },
+  {
+    "id": 22,
+    "type": "单选题",
+    "question": "定子绕组串电阻的降压启动是指电动机启动时，把电阻串接在电动机定子绕组与电源之间，通过电阻的分压作用来(　　)定子绕组上的启动电压。",
+    "options": ["A. 提高", "B. 减少", "C. 加强", "D. 降低"],
+    "answer": "D"
+  },
+  {
+    "id": 23,
+    "type": "单选题",
+    "question": "游标卡尺(　　)应清理干净，并将两量爪合并，检查游标卡尺的精度情况。",
+    "options": ["A. 测量后", "B. 测量时", "C. 测量中", "D. 测量前"],
+    "answer": "D"
+  },
+  {
+    "id": 24,
+    "type": "单选题",
+    "question": "若被测电流超过测量机构的允许值，就需要在表头上(　　)一个称为分流器的低值电阻。",
+    "options": ["A. 正接", "B. 反接", "C. 串联", "D. 并联"],
+    "answer": "D"
+  },
+  {
+    "id": 25,
+    "type": "单选题",
+    "question": "万用表的接线方法与直流电流表一样，应把万用表(　　)在电路中。测量直流电压时，应把万用表与被测电路并联。",
+    "options": ["A. 串联", "B. 并联", "C. 正接", "D. 反接"],
+    "answer": "A"
+  },
+  {
+    "id": 26,
+    "type": "单选题",
+    "question": "各种绝缘材料的机械强度的各种指标是(　　)等各种强度指标。",
+    "options": ["A. 抗张、抗压、抗弯", "B. 抗剪、抗撕、抗冲击", "C. 抗张，抗压", "D. 含A，B两项"],
+    "answer": "D"
+  },
+  {
+    "id": 27,
+    "type": "单选题",
+    "question": "(　　)是使用最普遍的电气设备之一，一般在70%-95%额定负载下运行时，效率最高，功率因数大。",
+    "options": ["A. 生活照明线路", "B. 变压器", "C. 工厂照明线路", "D. 电动机"],
+    "answer": "D"
+  },
+  {
+    "id": 28,
+    "type": "单选题",
+    "question": "丝锥的校准部分具有(　　)的牙形。",
+    "options": ["A. 较大", "B. 较小", "C. 完整", "D. 不完整"],
+    "answer": "C"
+  },
+  {
+    "id": 29,
+    "type": "单选题",
+    "question": "当流过人体的电流达到(　　)时，就足以使人死亡。",
+    "options": ["A. 0.1mA", "B. 1mA", "C. 15mA", "D. 100mA"],
+    "answer": "D"
+  },
+  {
+    "id": 30,
+    "type": "单选题",
+    "question": "高压设备室内不得接近故障点(　　)以内。",
+    "options": ["A. 1米", "B. 2米", "C. 3米", "D. 4米"],
+    "answer": "C"
+  },
+  {
+    "id": 31,
+    "type": "单选题",
+    "question": "噪声可分为气体动力噪声，(　　)和电磁噪声。",
+    "options": ["A. 电力噪声", "B. 水噪声", "C. 电气噪声", "D. 机械噪声"],
+    "answer": "D"
+  },
+  {
+    "id": 32,
+    "type": "单选题",
+    "question": "对于每个职工来说，质量管理的主要内容有岗位的质量要求、质量目标、(　　)和质量责任等。",
+    "options": ["A. 信息反馈", "B. 质量水平", "C. 质量记录", "D. 质量保证措施"],
+    "answer": "D"
+  },
+  {
+    "id": 33,
+    "type": "单选题",
+    "question": "劳动者的基本权利包括(　　)等。",
+    "options": ["A. 完成劳动任务", "B. 提高职业技能", "C. 遵守劳动纪律和职业道德", "D. 接受职业技能培训"],
+    "answer": "D"
+  },
+  {
+    "id": 34,
+    "type": "单选题",
+    "question": "劳动安全卫生管理制度对未成年工给予了特殊的劳动保护，规定严禁一切企业招收未满(　　)的童工。",
+    "options": ["A. 14周岁", "B. 15周岁", "C. 16周岁", "D. 18周岁"],
+    "answer": "C"
+  },
+  {
+    "id": 35,
+    "type": "单选题",
+    "question": "喷灯是一种利用火焰喷射对工件进行加工的工具，常用于(　　)。",
+    "options": ["A. 电焊", "B. 气焊", "C. 铜焊", "D. 锡焊"],
+    "answer": "D"
+  },
+  {
+    "id": 36,
+    "type": "单选题",
+    "question": "喷灯火焰和带电体之间的安全距离为：10KV以上大于3m，10KV以下大于(　　)。",
+    "options": ["A. 4.5m", "B. 3.5m", "C. 2.5m", "D. 1.5m"],
+    "answer": "D"
+  },
+  {
+    "id": 37,
+    "type": "单选题",
+    "question": "使用时，不能用千分尺测量(　　)的表面。",
+    "options": ["A. 精度一般", "B. 精度较高", "C. 精度较低", "D. 粗糙"],
+    "answer": "D"
+  },
+  {
+    "id": 38,
+    "type": "单选题",
+    "question": "塞尺由不同厚度的若干片叠合在夹板里，厚度为0.02～0.1mm组的，相邻两片间相差0.01mm，厚度为0.1～1mm组的，相邻两片间相差(　　)mm。",
+    "options": ["A. 0.01", "B. 0.02", "C. 0.04", "D. 0.05"],
+    "answer": "D"
+  },
+  {
+    "id": 39,
+    "type": "单选题",
+    "question": "车床加工的基本运动是主轴通过卡盘或顶尖带动工件旋转，溜板带动刀架做(　　)。",
+    "options": ["A. 圆弧运动", "B. 纵向运动", "C. 夹紧运动", "D. 直线运动"],
+    "answer": "D"
+  },
+  {
+    "id": 40,
+    "type": "单选题",
+    "question": "车床电源采用三相380V交流电源-由电源开关QS引入，总电源短路保护为(　　)。",
+    "options": ["A. QF", "B. KM", "C. FR", "D. FU"],
+    "answer": "D"
+  },
+  {
+    "id": 41,
+    "type": "单选题",
+    "question": "CA6140型车床电动机M2、M3的短路保护由FU1来实现，M1和M2的过载保护是由各自的(　　)来实现的，电动机采用接触器控制。",
+    "options": ["A. 熔断器", "B. 接触器", "C. 低压断路器", "D. 热继电器"],
+    "answer": "D"
+  },
+  {
+    "id": 42,
+    "type": "单选题",
+    "question": "CA6140型车床控制线路由控制变压器TC供电，控制电源电压为110V、熔断器FU2做(　　)。",
+    "options": ["A. 欠压保护", "B. 失压保护", "C. 过载保护", "D. 短路保护"],
+    "answer": "D"
+  },
+  {
+    "id": 43,
+    "type": "单选题",
+    "question": "CA6140型车床从安全需要考虑，快速进给电动机采用点动控制，按下快速按钮就可以(　　)。",
+    "options": ["A. 主轴运动", "B. 照明灯控制", "C. 信号灯控制", "D. 快速进给"],
+    "answer": "D"
+  },
+  {
+    "id": 44,
+    "type": "单选题",
+    "question": "当CA6140型车床主电源接通后，由控制变压器6V绕组供电的指示灯HL(　　)，表示车床已接通电源，可以开始工作。",
+    "options": ["A. 灭", "B. 亮", "C. 忽亮忽灭", "D. 都不对"],
+    "answer": "B"
+  },
+  {
+    "id": 45,
+    "type": "单选题",
+    "question": "钻床是一种用途广泛的(　　)机床。",
+    "options": ["A. 铰孔", "B. 通用", "C. 扩空", "D. 钻床"],
+    "answer": "B"
+  },
+  {
+    "id": 46,
+    "type": "单选题",
+    "question": "Z535型钻床的照明线路由变压器TC供给24V安全电压，SA为接通或断开(　　)的开关。",
+    "options": ["A. 冷却泵电动机", "B. 主轴电动机", "C. 照明", "D. 电源"],
+    "answer": "C"
+  },
+  {
+    "id": 47,
+    "type": "单选题",
+    "question": "Z535型钻床由(　　)对电动机M1和M2进行过载保护。",
+    "options": ["A. 熔断器FU1", "B. 接触器KM1", "C. 热继电器FR1", "D. 接触器KM2"],
+    "answer": "C"
+  },
+  {
+    "id": 48,
+    "type": "单选题",
+    "question": "为了能很好地适应调速以及在满载下频繁启动，起重机都采用(　　)。",
+    "options": ["A. 三相异步电动机", "B. 同步电动机", "C. 多速异步电动机", "D. 三相绕线转子异步电动机"],
+    "answer": "D"
+  },
+  {
+    "id": 49,
+    "type": "单选题",
+    "question": "5t桥式起重机因为是在(　　)工作制下，启动频繁，故电动机不使用热继电器，而采用带一定延时的过电流继电器。",
+    "options": ["A. 断续", "B. 连续", "C. 点动", "D. 顺序"],
+    "answer": "A"
+  },
+  {
+    "id": 50,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，用凸轮控制器的12对触头进行控制，其中(　　)起限位作用。",
+    "options": ["A. 5对", "B. 4对", "C. 2对", "D. 1对"],
+    "answer": "D"
+  },
+  {
+    "id": 51,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，凸轮控制器的手柄处于第一挡时，所有5对触点都是(　　)，电动机处于最低速的运行状态。",
+    "options": ["A. 接通状态", "B. 时通状态", "C. 断开状态", "D. 时断状态"],
+    "answer": "A"
+  },
+  {
+    "id": 52,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，凸轮控制器的手柄顺序工作到(　　)时，电阻器完全被短接，绕组中的电阻值为零，电动机处于最高速运转。",
+    "options": ["A. 第五挡", "B. 第四挡", "C. 第三挡", "D. 第二挡"],
+    "answer": "A"
+  },
+  {
+    "id": 53,
+    "type": "单选题",
+    "question": "起重机的保护配电柜，柜中电器元件主要有：三相刀闸开关、供电用的主接触器和总电源过电流继电器及各传动电动机保护用的(　　)等。",
+    "options": ["A. 热继电器", "B. 时间继电器", "C. 电压继电器", "D. 过电流继电器"],
+    "answer": "D"
+  },
+  {
+    "id": 54,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，对总过电流继电器，其整定值应为(　　)额定电流总和的1.5倍，或电动机功率最大一台的额定电流的2.5倍再加上其他电动机额定电流的总和。",
+    "options": ["A. 一部分电动机", "B. 全部电动机", "C. 电动机", "D. 最大功率电动机"],
+    "answer": "B"
+  },
+  {
+    "id": 55,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，各电动机的过电流继电器，通常分别整定在所保护电动机额定电流的(　　)倍。",
+    "options": ["A. 1.25～2.5", "B. 1.50～2.5", "C. 2.05～2.5", "D. 2.25～2.5"],
+    "answer": "D"
+  },
+  {
+    "id": 56,
+    "type": "单选题",
+    "question": "在5t桥式起重机线路中，为了安全，除起重机要可靠接地外，还要保证起重机轨道必须接地或重复接地，接地电阻不得大于(　　)。",
+    "options": ["A. 16Ω", "B. 10Ω", "C. 8Ω", "D. 4Ω"],
+    "answer": "D"
+  },
+  {
+    "id": 57,
+    "type": "单选题",
+    "question": "常见维修电工图的种类有：系统图和框图，(　　)，接线图。",
+    "options": ["A. 图形符号", "B. 设备简图", "C. 电路图", "D. 成套设备的连接关系简图"],
+    "answer": "C"
+  },
+  {
+    "id": 58,
+    "type": "单选题",
+    "question": "(　　)的基本步骤：看图样说明，看电气原理图，看安装线路图。",
+    "options": ["A. 识图", "B. 看维修电工图", "C. 看电气安装图", "D. 看平面布置图"],
+    "answer": "B"
+  },
+  {
+    "id": 59,
+    "type": "单选题",
+    "question": "用绝缘带包缠导线恢复绝缘时，要注意(　　)，更不允许露出芯线，以免发生触电或短路事故。",
+    "options": ["A. 不能过密", "B. 不能重叠", "C. 不能过疏", "D. 均匀"],
+    "answer": "D"
+  },
+  {
+    "id": 60,
+    "type": "单选题",
+    "question": "用感应法寻找断线、相间低电阻短路故障很方便，但不宜寻找高电阻短路及(　　)故障。",
+    "options": ["A. 两相接地", "B. 三相接地", "C. 单相接地", "D. 多相接地"],
+    "answer": "C"
+  },
+  {
+    "id": 61,
+    "type": "单选题",
+    "question": "(　　)的母线槽至少每年定期维修检查一次。",
+    "options": ["A. 长期运行", "B. 短期运行", "C. 定期运行", "D. 超期运行"],
+    "answer": "A"
+  },
+  {
+    "id": 62,
+    "type": "单选题",
+    "question": "工作接地的接地电阻每隔半年或一年检查(　　)。",
+    "options": ["A. 四次", "B. 三次", "C. 两次", "D. 一次"],
+    "answer": "D"
+  },
+  {
+    "id": 63,
+    "type": "单选题",
+    "question": "拆除风扇罩及风扇叶轮时，将固定风扇罩的螺钉拧下来，用木锤在与轴(　　)的方向从不同的位置上向外敲打风扇罩。",
+    "options": ["A. 垂直", "B. 平行", "C. 倾斜", "D. 偏移"],
+    "answer": "A"
+  },
+  {
+    "id": 64,
+    "type": "单选题",
+    "question": "电动机装轴承时，用煤油将轴承及轴承盖清洗干净，检查轴承有无裂纹、是否灵活、(　　)，如有问题则需更换。",
+    "options": ["A. 间隙是否过小", "B. 是否无间隙", "C. 间隙是否过大", "D. 变化很大"],
+    "answer": "C"
+  },
+  {
+    "id": 65,
+    "type": "单选题",
+    "question": "安装转子时，转子对准定子中心，沿着定子圆周的(　　)将缓缓地向定子里送进，送进过程中不得碰擦定子绕组。",
+    "options": ["A. 对角线", "B. 中心线", "C. 垂直线", "D. 平行线"],
+    "answer": "B"
+  },
+  {
+    "id": 66,
+    "type": "单选题",
+    "question": "对于低压电动机，如果测得绝缘电阻小于(　　)，应及时修理。",
+    "options": ["A. 3MΩ", "B. 2MΩ", "C. 1MΩ", "D. 0.5MΩ"],
+    "answer": "D"
+  },
+  {
+    "id": 67,
+    "type": "单选题",
+    "question": "三相异步电动机的常见故障有：电动机过热、电动机振动、(　　)。",
+    "options": ["A. 将三角形连接误接为星形连接", "B. 笼条断裂", "C. 绕组头尾接反", "D. 电动机启动后转速低或转矩小"],
+    "answer": "D"
+  },
+  {
+    "id": 68,
+    "type": "单选题",
+    "question": "进行集电环修理时，如果集电环表面的烧伤、凹凸沟槽深度达1mm左右，损伤面积达(　　)时，应上车床进行车削。",
+    "options": ["A. 5%～10%", "B. 10%～20%", "C. 20%～30%", "D. 30%～40%"],
+    "answer": "C"
+  },
+  {
+    "id": 69,
+    "type": "单选题",
+    "question": "用兆欧表逐相测量定子绕组与外壳的绝缘电阻，当转动摇柄时，指针指到零，说明绕组(　　)。",
+    "options": ["A. 击穿", "B. 短路", "C. 断路", "D. 接地"],
+    "answer": "D"
+  },
+  {
+    "id": 70,
+    "type": "单选题",
+    "question": "三相异步电动机定子绕组检修时，用短路探测器检查短路点，若检查的线圈有短路，则串在探测器回路的电流表读数(　　)。",
+    "options": ["A. 就小", "B. 不变", "C. 等于零", "D. 就大"],
+    "answer": "D"
+  },
+  {
+    "id": 71,
+    "type": "单选题",
+    "question": "三相异步电动机定子绕组用电压降压法检修时，为查出某一相短路故障，先在另一相加入低压交流电，在另外两相测感应电压，有短路的那相的感应电压(　　)。",
+    "options": ["A. 无穷大", "B. 为零", "C. 偏大", "D. 偏小"],
+    "answer": "D"
+  },
+  {
+    "id": 72,
+    "type": "单选题",
+    "question": "电动机绝缘电阻的测量，对500V以上的电动机，应采用(　　)的兆欧表。",
+    "options": ["A. 380V", "B. 500V", "C. 1000V", "D. 1000V或2500V"],
+    "answer": "D"
+  },
+  {
+    "id": 73,
+    "type": "单选题",
+    "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是(　　)修理时，试验电压可低些，低压电机的实验电压为额定电压再加上500V。",
+    "options": ["A. 局部", "B. 整个", "C. 大部分", "D. 少部分"],
+    "answer": "A"
+  },
+  {
+    "id": 74,
+    "type": "单选题",
+    "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是局部修理时，对于(　　)以下的电机，若无高压实验设备，可用1000V的兆欧表作为实验电源，摇测1min。",
+    "options": ["A. 110V", "B. 220V", "C. 380V", "D. 500V"],
+    "answer": "D"
+  },
+  {
+    "id": 75,
+    "type": "单选题",
+    "question": "小型变压器的修理，接通电源无电压输出时，若一次回路(　　)，而二次回路既无电压也无电流，则一般是二次绕组的出线端头断裂。",
+    "options": ["A. 有较大的电流", "B. 电流为零", "C. 有较小的电流", "D. 电流为无穷大"],
+    "answer": "A"
+  },
+  {
+    "id": 76,
+    "type": "单选题",
+    "question": "小型变压器线圈的绝缘处理，将线圈放在电烘箱内加温到70～80℃，保温6h，然后立即侵入绝缘清漆中约0.5h，取出后放在通风处阴干，再放进烘箱加温到80℃，烘(　　)即可。",
+    "options": ["A. 9h", "B. 10h", "C. 11h", "D. 12h"],
+    "answer": "D"
+  },
+  {
+    "id": 77,
+    "type": "单选题",
+    "question": "小型变压器绝缘电阻测试，用兆欧表测量各绕组之间和它们对铁心的绝缘电阻，其值(　　)1MΩ。",
+    "options": ["A. 等于", "B. 不应高于", "C. 不应低于", "D. 低于"],
+    "answer": "C"
+  },
+  {
+    "id": 78,
+    "type": "单选题",
+    "question": "接触器触点的整形修理时，当电流过大、灭弧装置失效、触点容量过小或因触点弹簧损坏，初压力过小时，触点(　　)电路时会产生电弧。",
+    "options": ["A. 闭合", "B. 断开", "C. 导电", "D. 闭合或断开"],
+    "answer": "B"
+  },
+  {
+    "id": 79,
+    "type": "单选题",
+    "question": "接触器触点的超程是指触点(　　)后，动触点发生的位移。",
+    "options": ["A. 分开一半", "B. 闭合一半", "C. 完全分开", "D. 完全闭和"],
+    "answer": "D"
+  },
+  {
+    "id": 80,
+    "type": "单选题",
+    "question": "测量接触器桥式触点终压力，测量时要注意拉力方向应(　　)触点接触线方向。",
+    "options": ["A. 平行于", "B. 对准于", "C. 相交于", "D. 垂直于"],
+    "answer": "D"
+  },
+{
+id: 81,
+type: '单选题',
+question: '接触器的主触点通断时，三相应保证同时通断，其先后误差不得超过(　　)。',
+options: ['A. 2ms', 'B. 1.5ms', 'C. 1ms', 'D. 0.5ms'],
+answer: 'D'
+},
+{
+id: 82,
+type: '单选题',
+question: '热继电器的环境温度与电动机的环境温度，一般相差15-20oC时，修正值约为(　　)。',
+options: ['A. 40%', 'B. 30%', 'C. 20%', 'D. 10%'],
+answer: 'D'
+},
+{
+id: 83,
+type: '单选题',
+question: '电磁式继电器检测与要求，对于一般桥式触点，吸合时的超额行程不小于(　　)。',
+options: ['A. 4.5mm', 'B. 3.5mm', 'C. 2.5mm', 'D. 1.5mm'],
+answer: 'D'
+},
+{
+id: 84,
+type: '单选题',
+question: '过电流继电器动作值的整定，对于直流继电器应按电动机最大工作冲击(　　)的110%-115%进行整定。',
+options: ['A. 电阻', 'B. 电压', 'C. 电流', 'D. 电容'],
+answer: 'C'
+},
+{
+id: 85,
+type: '单选题',
+question: '时间继电器的整定，延时在3s以下的一般时间继电器采用(　　)取时间，靠时间继电器的延时触点控制的方法来记取时间。',
+options: ['A. 手表', 'B. 跑表', 'C. 电气秒表', 'D. 其它'],
+answer: 'B'
+},
+{
+id: 86,
+type: '单选题',
+question: '低压断路器触点的磨损超过厚度的1/3以上或超程减少到(　　)时，就应更换新触点。',
+options: ['A. 1/5', 'B. 1/4', 'C. 1/6', 'D. 1/2'],
+answer: 'D'
+},
+{
+id: 87,
+type: '单选题',
+question: '检修CA6140型车床时，按停止按钮，主轴不停转的原因是(　　)。',
+options: ['A. 接触器主触点因熔焊而粘死', 'B. 接触器内部有机械卡死现象', 'C. 按钮常闭触头不能断开', 'D. 以上都正确'],
+answer: 'D'
+},
+{
+id: 88,
+type: '单选题',
+question: '三相异步电动机在刚启动的瞬间，定子中的启动电流是其额定电流的(　　)倍。',
+options: ['A. 3-7', 'B. 6-7', 'C. 5-7', 'D. 4-7'],
+answer: 'D'
+},
+{
+id: 89,
+type: '单选题',
+question: '频敏变阻器的特点是它的电阻值随转速的(　　)而自动平滑地减小，使电动机能够平稳地启动，但其功率因数较低。',
+options: ['A. 下降', 'B. 上升', 'C. 减少', 'D. 增加'],
+answer: 'B'
+},
+{
+id: 90,
+type: '单选题',
+question: '三相异步电动机在转子电路串接电阻时，转子回路串接不同阻值的电阻，阻值越大，特性越软，在一定转矩时转速(　　)。',
+options: ['A. 也就越高', 'B. 为零', 'C. 为无穷大', 'D. 也就越低'],
+answer: 'D'
+},
+{
+id: 91,
+type: '单选题',
+question: '由于变压器一次、二次绕组有电阻和漏感，负载电流通过这些漏阻抗产生内部(　　)，其二次侧端电压随负载的变化而变化。',
+options: ['A. 电流降', 'B. 电阻降', 'C. 电压降', 'D. 电容降'],
+answer: 'C'
+},
+{
+id: 92,
+type: '单选题',
+question: '配电板可用2.5—3mm钢板制作，上面覆盖一张(　　)左右的布质酚醛层压板。',
+options: ['A. 1mm', 'B. 2mm', 'C. 3mm', 'D. 4mm'],
+answer: 'A'
+},
+{
+id: 93,
+type: '单选题',
+question: '配电板的尺寸要小于配电柜门框的尺寸，还要考虑到电器元件(　　)配电板能自由进出柜门。',
+options: ['A. 拆卸后', 'B. 固定后', 'C. 拆装后', 'D. 安装后'],
+answer: 'D'
+},
+{
+id: 94,
+type: '单选题',
+question: '备齐所有的元器件，将元器件进行模拟排列，元器件(　　)要合理。',
+options: ['A. 走向', 'B. 码放', 'C. 布局', 'D. 安装位置'],
+answer: 'C'
+},
+{
+id: 95,
+type: '单选题',
+question: '用划针在底板上画出元器件的(　　)孔位置，然后拿开所有的元器件。',
+options: ['A. 拆装', 'B. 固定', 'C. 拆卸', 'D. 装配'],
+answer: 'B'
+},
+{
+id: 96,
+type: '单选题',
+question: '安装接触器时，要求散热孔(　　)。',
+options: ['A. 朝右', 'B. 朝左', 'C. 朝下', 'D. 朝上'],
+answer: 'D'
+},
+{
+id: 97,
+type: '单选题',
+question: '主回路的连接线一般采用较粗的(　　)单股塑料铜芯线。',
+options: ['A. 0.75mm²', 'B. 1mm²', 'C. 1.5mm²', 'D. 2.5mm²'],
+answer: 'D'
+},
+{
+id: 98,
+type: '单选题',
+question: '控制回路(　　)采用1mm²的单股塑料铜芯线。',
+options: ['A. 很少', 'B. 一般', 'C. 大多数', 'D. 必须'],
+answer: 'B'
+},
+{
+id: 99,
+type: '单选题',
+question: '检查主回路和控制回路的布线是否合理、正确，所有(　　)螺钉是否拧紧、牢固，(　　)是否平直、整齐。',
+options: ['A. 电线，导线', 'B. 电线，接线', 'C. 接线，导线', 'D. 导线，电线'],
+answer: 'C'
+},
+{
+id: 100,
+type: '单选题',
+question: '专用继电器是一种根据电量或非电量的变化，接通或断开小电流(　　)。',
+options: ['A. 主电路', 'B. 主电路和控制电路', 'C. 辅助电路', 'D. 控制电路'],
+answer: 'D'
+},
+  {
+    "id": 101,
+    "type": "单选题",
+    "question": "速度继电器是反映(　　)的继电器，其主要作用是以旋转速度的快慢为指令信号。",
+    "options": [
+      "A. 气压",
+      "B. 转速和转向",
+      "C. 水压",
+      "D. 压力"
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 102,
+    "type": "单选题",
+    "question": "在速度继电器的型号及含义中，以JFZO为例，其中Z代表(　　)。",
+    "options": [
+      "A. 中间",
+      "B. 时间",
+      "C. 制动",
+      "D. 快慢"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 103,
+    "type": "单选题",
+    "question": "JY1型速度继电器触头额定电压380V，触头额定电流2A，额定工作转速(　　)r/min，允许操作频率小于30次/h。",
+    "options": [
+      "A. 300—1000",
+      "B. 100—3000",
+      "C. 100—3600",
+      "D. 1000—3600"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 104,
+    "type": "单选题",
+    "question": "速度继电器的弹性动触片调整的规律为，将调整螺钉向下旋，弹性动触片弹性(　　)，速度较高时继电器才动作。",
+    "options": [
+      "A. 减少",
+      "B. 不变",
+      "C. 增大",
+      "D. 为零"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 105,
+    "type": "单选题",
+    "question": "速度继电器的弹性动触片调整的规律是将调整螺钉向上旋，弹性动触片弹性减小，速度(　　)时继电器即动作。",
+    "options": [
+      "A. 较高",
+      "B. 不变",
+      "C. 为零",
+      "D. 较低"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 106,
+    "type": "单选题",
+    "question": "温度继电器广泛应用于(　　)、大功率晶体管等器件的过热保护。",
+    "options": [
+      "A. 接触器线路",
+      "B. 电动机绕组",
+      "C. 主电路",
+      "D. 控制电路"
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 107,
+    "type": "单选题",
+    "question": "热敏电阻式温度继电器应用较广，它的外形同一般晶体管式时间继电器(　　)。",
+    "options": [
+      "A. 不一样",
+      "B. 一样",
+      "C. 差别很大",
+      "D. 相似"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 108,
+    "type": "单选题",
+    "question": "热敏电阻式温度继电器当温度在65°C以下时，热敏电阻为恒定值，电桥处于平衡状态，执行继电器(　　)。",
+    "options": [
+      "A. 触头断开",
+      "B. 触头闭合",
+      "C. 动作",
+      "D. 不动作"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 109,
+    "type": "单选题",
+    "question": "压力继电器经常用于机械设备的油压、水压或气压控制系统中，它能根据压力源压力的变化情况决定触点的断开或闭合，以便对机械设备提供(　　)。",
+    "options": [
+      "A. 相应的信号",
+      "B. 操纵的命令",
+      "C. 控制",
+      "D. 保护或控制"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 110,
+    "type": "单选题",
+    "question": "压力继电器的微动开关和顶杆的距离一般大于(　　)。",
+    "options": [
+      "A. 0.1mm",
+      "B. 0.2mm",
+      "C. 0.4mm",
+      "D. 0.6mm"
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 111,
+    "type": "单选题",
+    "question": "晶体管时间继电器也称(　　)时间继电器，是自动控制系统中的重要元件。",
+    "options": [
+      "A. 导体",
+      "B. 半导体",
+      "C. 气囊式",
+      "D. 电子式"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 112,
+    "type": "单选题",
+    "question": "控制回路相互协调需(　　)时，选用晶体管时间继电器。",
+    "options": [
+      "A. 有触点输出",
+      "B. 有触点输入",
+      "C. 无触点输出",
+      "D. 无触点输入"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 113,
+    "type": "单选题",
+    "question": "安装时，首先将电子元件的引线除锈搪锡，再用(　　)夹持引线根部，将引线弯成90°，然后插入底板的孔中。",
+    "options": [
+      "A. 钳子",
+      "B. 镊子",
+      "C. 手",
+      "D. 专用工具"
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 114,
+    "type": "单选题",
+    "question": "检测电子元件的安装与焊接时，检测各元件有无(　　)现象。",
+    "options": [
+      "A. 接错",
+      "B. 接反",
+      "C. 漏接",
+      "D. 接错、接反"
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 115,
+    "type": "单选题",
+    "question": "进行多股铜导线的连接时，将散开的各导线(　　)对插，再把张开的各线端合扰，取任意两股同时绕5-6圈后，采用同样的方法调换两股再卷绕，依次类推绕完为止。",
+    "options": [
+      "A. 隔根",
+      "B. 隔两根",
+      "C. 隔三根",
+      "D. 隔四根"
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 116,
+    "type": "单选题",
+    "question": "导线连接后，需要恢复绝缘，绝缘强度(　　)原有绝缘层。",
+    "options": [
+      "A. 不高于",
+      "B. 等于",
+      "C. 不低于",
+      "D. 低于"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 117,
+    "type": "单选题",
+    "question": "导线恢复绝缘，在包缠时不能过疏，不能露出芯线，以免发生(　　)事故。",
+    "options": [
+      "A. 触电",
+      "B. 断路",
+      "C. 短路",
+      "D. 触电或断路"
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 118,
+    "type": "单选题",
+    "question": "直径19mm以下电线管的线管配线时，穿管导线的总面积不得超过线管内径截面积的40%。线管的(　　)可根据有关表格来选择。",
+    "options": [
+      "A. 面积",
+      "B. 半径",
+      "C. 管径",
+      "D. 直径"
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 119,
+    "type": "单选题",
+    "question": "弯管时，管子的弯曲角度不应小于(　　)。",
+    "options": [
+      "A. 90°",
+      "B. 60°",
+      "C. 45°",
+      "D. 30°"
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 120,
+    "type": "单选题",
+    "question": "钢管与钢管、配电箱及接线盒等处的配线，用直径为6-10mm圆钢制成的跨接线连接时，所有线管上的金属元件都可靠(　　)。",
+    "options": [
+      "A. 重复接地",
+      "B. 工作接地",
+      "C. 接零",
+      "D. 接地"
+    ],
+    "answer": "D"
+  },
+{
+id: 121,
+type: '单选题',
+question: '管内配线时，管内导线一般不允许超过(　__)根，同一根线管内不允许穿不同电压或不同电度表的导线。',
+options: ['A. 12', 'B. 10', 'C. 8', 'D. 6'],
+answer: 'B'
+},
+{
+id: 122,
+type: '单选题',
+question: '管线配线时，导线的绝缘强度不低于500V，导线最小截面铜芯线为(　__)，铝芯线为2.5mm²。',
+options: ['A. 0.5mm²', 'B. 0.75mm²', 'C. 1mm²', 'D. 1.5mm²'],
+answer: 'C'
+},
+{
+id: 123,
+type: '单选题',
+question: '控制箱内外所有电气设备和电气元件的编号，必须与(　__)上的编号完全一致。',
+options: ['A. 电气原理图', 'B. 实际接线图', 'C. 元件布置图', 'D. 线路接线图'],
+answer: 'A'
+},
+{
+id: 124,
+type: '单选题',
+question: '为了防止(　__)，所有元件的引线均应预先镀锡。',
+options: ['A. 假焊', 'B. 虚焊', 'C. 漏焊', 'D. 夹生焊'],
+answer: 'A'
+},
+{
+id: 125,
+type: '单选题',
+question: '焊点距管壳不小于10mm，电烙铁功率一般不大于45W，焊接时间不超过(　__)。',
+options: ['A. 5s', 'B. 6s', 'C. 7s', 'D. 8s'],
+answer: 'A'
+},
+{
+id: 126,
+type: '单选题',
+question: '晶体管工作在放大状态时，发射结正偏，对于硅管约为(　__)，锗管约为0.3V。',
+options: ['A. 0.2V', 'B. 0.3V', 'C. 0.5V', 'D. 0.7V'],
+answer: 'D'
+},
+{
+id: 127,
+type: '单选题',
+question: '单管电压放大电路的动态分析时的电压放大过程，放大电路在直流电源和交流信号的作用下，电路中电流和电压既有直流分量，又有交流分量，即在静态值的基础上叠加一个(　__)。',
+options: ['A. 直流值', 'B. 电阻值', 'C. 电容值', 'D. 交流值'],
+answer: 'D'
+},
+{
+id: 128,
+type: '单选题',
+question: '把放大电路的输出信号电压或电流的一部分或全部通过反馈电路，送回到输入端的过程叫(　__)。',
+options: ['A. 交流反馈', 'B. 直流反馈', 'C. 截止', 'D. 反馈'],
+answer: 'D'
+},
+{
+id: 129,
+type: '单选题',
+question: '若反馈到输入端的是交流量，称为(　__)，它能改善交流电路的性能。',
+options: ['A. 正反馈', 'B. 负反馈', 'C. 交流反馈', 'D. 直流反馈'],
+answer: 'C'
+},
+{
+id: 130,
+type: '单选题',
+question: '若反馈到输入端的是直流量，则称为直流负反馈，它能稳定(　__)。',
+options: ['A. 直流负载线', 'B. 基极偏置电流', 'C. 集电极电压', 'D. 静态工作点'],
+answer: 'D'
+},
+{
+id: 131,
+type: '单选题',
+question: '振荡电路产生自激振荡的振幅条件是：反馈到放大器输入端的电压幅值必须等于或大于放大器的原输入(　__)幅值。',
+options: ['A. 电流', 'B. 电阻', 'C. 电容', 'D. 电压'],
+answer: 'D'
+},
+{
+id: 132,
+type: '单选题',
+question: '变压器耦合式振荡器电路，当振荡电路接通电源瞬间，在集电极电路中激起一个微小的(　__)变化。',
+options: ['A. 电容', 'B. 电阻', 'C. 电压', 'D. 电流'],
+answer: 'D'
+},
+{
+id: 133,
+type: '单选题',
+question: '静态工作点稳定的放大回路中，当温度升高时，集电极静态(　__)，造成静态工作点上移，靠近饱和区，容易引起饱和失真。',
+options: ['A. 电流降低', 'B. 电压降低', 'C. 电流增大', 'D. 电压增大'],
+answer: 'C'
+},
+{
+id: 134,
+type: '单选题',
+question: '整流电路是利用二极管的单向导电性，将交流电压变换成单方向的脉动(　__)。',
+options: ['A. 交流电流', 'B. 交流电压', 'C. 直流电流', 'D. 直流电压'],
+answer: 'D'
+},
+{
+id: 135,
+type: '单选题',
+question: '对于电动机不经常启动而且启动时间不长的电路，熔体额定电流约等于电动机(　__)的1.5倍。',
+options: ['A. 额定电压', 'B. 电压', 'C. 额定电流', 'D. 电流'],
+answer: 'C'
+},
+{
+id: 136,
+type: '单选题',
+question: '多台交流电动机线路总熔体的额定电流，约等于线路上功率最大一台电动机电流的1.5-2.5倍，再加上其他电动机(　__)的总和。',
+options: ['A. 电压', 'B. 电流', 'C. 额定电压', 'D. 额定电流'],
+answer: 'D'
+},
+{
+id: 137,
+type: '单选题',
+question: '刀开关的额定电压应等于或大于电路额定电压，其额定电流应(　__)电路的工作电流。',
+options: ['A. 稍小于', 'B. 稍大于', 'C. 等于或稍小于', 'D. 等于或稍大于'],
+answer: 'D'
+},
+{
+id: 138,
+type: '单选题',
+question: '低压断路器的热脱扣器的整定电流(　__)所控负载的额定电流。',
+options: ['A. 大于', 'B. 小于', 'C. 等于', 'D. 大于等于'],
+answer: 'C'
+},
+{
+id: 139,
+type: '单选题',
+question: 'CA6140型车床的(　__)前准备时，应将有关的图样和安装、使用、维修、调试说明准备好。',
+options: ['A. 运行', 'B. 调试', 'C. 检修', 'D. 检测'],
+answer: 'C'
+},
+{
+id: 140,
+type: '单选题',
+question: 'CA6140型车床的调试前准备时，应将电工工具、兆欧表、万用表和(　__)准备好。',
+options: ['A. 电压表', 'B. 电流表', 'C. 转速表', 'D. 钳形电流表'],
+answer: 'D'
+},
+{
+id: 141,
+type: '单选题',
+question: 'CA6140型车床的调试前准备时，测量电动机M1、M2、M3绕组间、对地绝缘电阻是否大于(　　)兆欧。',
+options: ['A. 3', 'B. 2', 'C. 1', 'D. 0.5'],
+answer: 'D'
+},
+{
+id: 142,
+type: '单选题',
+question: 'CA6140型车床的调试前准备时，测量线路对地电阻是否(　　)3兆欧。',
+options: ['A. 等于', 'B. 小于', 'C. 大于', 'D. 大于等于'],
+answer: 'D'
+},
+{
+id: 143,
+type: '单选题',
+question: 'CA6140型车床的调试前准备时，检查电动机是否转动灵活，(　　)有无缺油等现象。',
+options: ['A. 各个部件', 'B. 各个电气元件', 'C. 轴承', 'D. 主要部件'],
+answer: 'C'
+},
+{
+id: 144,
+type: '单选题',
+question: 'CA6140型车床的调试时，控制回路试车时，检查控制变压器一次侧为(　　)、二次侧为24V、6V、110V。',
+options: ['A. 500V', 'B. 380V', 'C. 127V', 'D. 36V'],
+answer: 'B'
+},
+{
+id: 145,
+type: '单选题',
+question: 'CA6140型车床主回路加电试车时，经过一段时间试运行，观察、检查电动机有无异常响声、异味、冒烟、振动和(　　)等异常现象。',
+options: ['A. 温升过低', 'B. 温升过高', 'C. 温升不高于', 'D. 温升不低于'],
+answer: 'B'
+},
+{
+id: 146,
+type: '单选题',
+question: 'Z535钻床调试前的准备时，将有关(　　)和安装、调试、使用、维修说明书准备好。',
+options: ['A. 图样', 'B. 电路图', 'C. 技术说明', 'D. 电气设备明细表'],
+answer: 'A'
+},
+{
+id: 147,
+type: '单选题',
+question: 'Z535钻床调试前的准备时，测量电动机M1、M2各绕组间和对地的绝缘电阻是否(　　)0.5兆欧。',
+options: ['A. 小于', 'B. 大于', 'C. 等于', 'D. 大于等于'],
+answer: 'D'
+},
+{
+id: 148,
+type: '单选题',
+question: 'Z535钻床调试前的准备时，测量线路对地电阻是否大于(　　)兆欧。',
+options: ['A. 2', 'B. 3', 'C. 1', 'D. 0.5'],
+answer: 'C'
+},
+{
+id: 149,
+type: '单选题',
+question: 'Z535钻床控制回路试车时，将QS1接通，用万用表测量FU1进线处应有三相(　__)V交流电压。',
+options: ['A. 500', 'B. 380', 'C. 127', 'D. 36'],
+answer: 'B'
+},
+{
+id: 150,
+type: '单选题',
+question: 'Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器一次侧有380V、220V(　__)。',
+options: ['A. 电阻', 'B. 交流电压', 'C. 电流', 'D. 直流电压'],
+answer: 'B'
+},
+{
+id: 151,
+type: '单选题',
+question: 'Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器二次侧有(　__)交流电压。',
+options: ['A. 127V', 'B. 24V', 'C. 36V', 'D. 12V'],
+answer: 'A'
+},
+{
+id: 152,
+type: '单选题',
+question: 'Z535钻床控制主回路试车时，再停电状态下，调整(　__)。',
+options: ['A. 接触器', 'B. 热继电器', 'C. 组合开关', 'D. 按钮'],
+answer: 'B'
+},
+{
+id: 153,
+type: '单选题',
+question: 'Z535钻床控制主回路试车时，再停电状态下，调整热继电器，使其动作电流为主轴电动机额定电流的(　__)倍左右。',
+options: ['A. 1.5', 'B. 1.2', 'C. 2', 'D. 2.5'],
+answer: 'A'
+},
+{
+id: 154,
+type: '单选题',
+question: '测量线路对地电阻应大于(　__)。',
+options: ['A. 6MΩ', 'B. 5MΩ', 'C. 4MΩ', 'D. 3MΩ'],
+answer: 'D'
+},
+{
+id: 155,
+type: '单选题',
+question: '用兆欧表对电路进行测试，检查元器件及导线绝缘是否良好，(　__)与底板之间有无短路现象。',
+options: ['A. 相间', 'B. 火线', 'C. 相间或相线', 'D. 相线'],
+answer: 'C'
+},
+{
+id: 156,
+type: '单选题',
+question: '电动机启动后，注意听和观察电动机有无异常声音及(　__)是否正确。',
+options: ['A. 正转', 'B. 反转', 'C. 正反方向', 'D. 转向'],
+answer: 'D'
+},
+    {
+        id: 157,
+        type: '单选题',
+        question: '启动电动机前，应用钳形电流表卡住电动机三根引线的其中一根，测量电动机的(　__)。',
+        options: ['A. 运行电流', 'B. 启动电阻', 'C. 启动电流', 'D. 启动电流'],
+        answer: 'C'
+    },
+    {
+        id: 158,
+        type: '单选题',
+        question: '电动机的(　__)一般是额定电流的5-7倍。',
+        options: ['A. 启动电流', 'B. 运行电流', 'C. 启动电阻', 'D. 启动电压'],
+        answer: 'A'
+    },
+    {
+        id: 159,
+        type: '单选题',
+        question: '电动机正常运行后，测量电动机三相电流应平衡，(　__)时电流是否超过额定值。',
+        options: ['A. 空载', 'B. 空载和有负载', 'C. 满载', 'D. 长期运行'],
+        answer: 'B'
+    },
+    {
+        id: 160,
+        type: '单选题',
+        question: '电动机三相电流正常，使电动机运行30min，运行中经常测试电动机的外壳温度，检查长时间运行中的温升是否(　__)。',
+        options: ['A. 太高', 'B. 太快', 'C. 太慢', 'D. 太高或太快'],
+        answer: 'D'
+    },
+  {
+    id: 161,
+    type: '单选题',
+    question: '在市场经济条件下，职业道德具有(　　)的社会功能。',
+    options: ['A. 鼓励人们自由选择职业', 'B. 遏制牟利最大化', 'C. 促进人们的行为规范化', 'D. 最大限度地克服人们受利益驱动'],
+    answer: 'C'
+},
+{
+    id: 162,
+    type: '单选题',
+    question: '下列选项中属于企业文化功能的是(　　)。',
+    options: ['A. 体育锻炼', 'B. 整合功能', 'C. 歌舞娱乐', 'D. 社会交际'],
+    answer: 'B'
+},
+{
+    id: 163,
+    type: '单选题',
+    question: '办事公道是指从业人员在进行职业活动时要做到(　　)。',
+    options: ['A. 追求真理，坚持原则', 'B. 有求必应，助人为乐', 'C. 公私不分，一切平等', 'D. 知人善任，提拔知已'],
+    answer: 'A'
+},
+{
+    id: 164,
+    type: '单选题',
+    question: '(　　)的作用是实现能量的传输和转换、信号的传递和处理。',
+    options: ['A. 电源', 'B. 非电能', 'C. 电路', 'D. 电能'],
+    answer: 'C'
+},
+{
+    id: 165,
+    type: '单选题',
+    question: '在电源内部由负极指向正极，即从(　　)。',
+    options: ['A. 高电位指向高电位', 'B. 低电位指向低电位', 'C. 高电位指向低电位', 'D. 低电位指向高电位'],
+    answer: 'D'
+},
+{
+    id: 166,
+    type: '单选题',
+    question: '电位是(　　)，随参考点的改变而改变，而电压是绝对量，不随考点的改变而改变。',
+    options: ['A. 衡量', 'B. 变量', 'C. 绝对量', 'D. 相对量'],
+    answer: 'D'
+},
+{
+    id: 167,
+    type: '单选题',
+    question: '电阻器反映导体对电流起阻碍作用的大小，简称(　　)。',
+    options: ['A. 电动势', 'B. 功率', 'C. 电阻率', 'D. 电阻'],
+    answer: 'D'
+},
+{
+    id: 168,
+    type: '单选题',
+    question: '部分电路欧姆定律反映了在(　　)的一段电路中，电流与这段电路两端的电压及电阻的关系。',
+    options: ['A. 含电源', 'B. 不含电源', 'C. 含电源和负载', 'D. 不含电源和负载'],
+    answer: 'B'
+},
+{
+    id: 169,
+    type: '单选题',
+    question: '(　　)的一端连在电路中的一点，另一端也同时连在另一点，使每个电阻两端都承受相同的电压，这种联结方式叫电阻的并联。',
+    options: ['A. 两个相同电阻', 'B. 一大一小电阻', 'C. 几个相同大小的电阻', 'D. 几个电阻'],
+    answer: 'D'
+},
+{
+    id: 170,
+    type: '单选题',
+    question: '如图所示，不计电压表和电流表的内阻对电路的影响。开关接3时，电流表的电流为(　　)。',
+    options: ['A. 0A', 'B. 10A', 'C. 0.2A', 'D. 约等于0.2A'],
+    answer: 'A'
+},
+{
+    id: 171,
+    type: '单选题',
+    question: '在(　　)，磁力线由S极指向N极。',
+    options: ['A. 磁场外部', 'B. 磁体内部', 'C. 磁场两端', 'D. 磁场一端到另一端'],
+    answer: 'B'
+},
+{
+    id: 172,
+    type: '单选题',
+    question: '单位面积上垂直穿过的磁力线数叫作(　　)。',
+    options: ['A. 磁通或磁通量', 'B. 磁导率', 'C. 磁感应强度', 'D. 磁场强度'],
+    answer: 'C'
+},
+{
+    id: 173,
+    type: '单选题',
+    question: '当线圈中的磁通增加时，感应电流产生的磁通与原磁通方向(　　)。',
+    options: ['A. 正比', 'B. 反比', 'C. 相反', 'D. 相同'],
+    answer: 'C'
+},
+{
+    id: 174,
+    type: '单选题',
+    question: '正弦量的平均值与最大值之间的关系不正确的是(　　)。',
+    options: ['A. Eav=2/π*Em', 'B. Uav=2/π*Em', 'C. Iav=2/π*Em', 'D. I=Im/1.44'],
+    answer: 'D'
+},
+{
+    id: 175,
+    type: '单选题',
+    question: '每相绕组两端的电压称相电压。它们的相位(　　)。',
+    options: ['A. 45°', 'B. 90°', 'C. 120°', 'D. 180°'],
+    answer: 'C'
+},
+{
+    id: 176,
+    type: '单选题',
+    question: '将变压器的一次侧绕组接交流电源，二次侧绕组与(　　)连接，这种运行方式称为变压器空载运行。',
+    options: ['A. 短路', 'B. 开路', 'C. 断路', 'D. 通路'],
+    answer: 'B'
+},
+{
+    id: 177,
+    type: '单选题',
+    question: '当ωt=360°时，ｉ1、ｉ2、ｉ3分别为(　　)。',
+    options: ['A. 负值、正值、0', 'B. 0、正值、负值', 'C. 负值、0、正值', 'D. 0、负值、正值'],
+    answer: 'D'
+},
+{
+    id: 178,
+    type: '单选题',
+    question: '电磁脱扣器的瞬时脱扣整定电流应(　　)负载正常工作时可能出现的峰值电流。',
+    options: ['A. 小于', 'B. 等于', 'C. 大于', 'D. 不小于'],
+    answer: 'C'
+},
+{
+    id: 179,
+    type: '单选题',
+    question: '导通后二极管两端电压变化很小，锗管约为(　　)。',
+    options: ['A. 0.5V', 'B. 0.7V', 'C. 0.3V', 'D. 0.1V'],
+    answer: 'C'
+},
+{
+    id: 180,
+    type: '单选题',
+    question: '三极管放大区的放大条件为(　　)。',
+    options: ['A. 发射结正偏，集电结反偏', 'B. 发射结反偏或零偏，集电结反偏', 'C. 发射结和集电结正偏', 'D. 发射结和集电结反偏'],
+    answer: 'A'
+},
+{
+    id: 181,
+    type: '单选题',
+    question: '在图中所示放大电路，已知Ucc=6V、Rc=2KΩ、RB=200Kω、=50。若RB断开，三极管工作在(　　)状态。',
+    options: ['A. 放大', 'B. 截止', 'C. 饱和', 'D. 导通'],
+    answer: 'B'
+},
+{
+    id: 182,
+    type: '单选题',
+    question: '维修电工以电气原理图,(　　)和平面布置最为重要.',
+    options: ['A. 配线方式图', 'B. 安装接线图', 'C. 接线方式图', 'D. 组件位置图'],
+    answer: 'B'
+},
+{
+    id: 183,
+    type: '单选题',
+    question: '读图的基本步骤有：看图样说明，(　　)，看安装接线图。',
+    options: ['A. 看主电路', 'B. 看电路图', 'C. 看辅助电路', 'D. 看交流电路'],
+    answer: 'B'
+},
+{
+    id: 184,
+    type: '单选题',
+    question: 'Y-D降压启动的指电动机启动时，把定子绕组联结成Y形，以降低启动电压，限制启动电流。待电动机启动后，再把定子绕组改成(　__)，使电动机全压运行。',
+    options: ['A. YY', 'B. Y形', 'C. DD形', 'D. D形'],
+    answer: 'D'
+},
+{
+    id: 185,
+    type: '单选题',
+    question: '按钮联锁正反转控制线路的优点是操作方便，缺点是容易产生电源两相短路事故。在实际工作中，经常采用按钮，接触器双重联锁(　__)控制线路。',
+    options: ['A. 点动', 'B. 自锁', 'C. 顺序启动', 'D. 正反转'],
+    answer: 'D'
+},
+{
+    id: 186,
+    type: '单选题',
+    question: '若被测电流超过测量机构的允许值，就需要在表头上(　__)一个称为分流器的低值电阻。',
+    options: ['A. 正接', 'B. 反接', 'C. 串联', 'D. 并联'],
+    answer: 'D'
+},
+{
+    id: 187,
+    type: '单选题',
+    question: '多量程的电压表是在表内备有可供选择的(　__)阻值倍压器的电压表。',
+    options: ['A. 一种', 'B. 两种', 'C. 三种', 'D. 多种'],
+    answer: 'D'
+},
+{
+    id: 188,
+    type: '单选题',
+    question: '交流电压的量程有10V，100V，500V，三档。用毕应将万用表的转换开关转到(　__)，以免下次使用不慎而损坏电表。',
+    options: ['A. 低电阻档', 'B. 低电阻档', 'C. 低电压档', 'D. 高电压档'],
+    answer: 'D'
+},
+{
+    id: 189,
+    type: '单选题',
+    question: '在开始功螺纹或套螺纹时，要尽量把丝锥或板牙方正，当切入(　__)圈时，再仔细观察和校正对工件的垂直度。',
+    options: ['A. 0～1', 'B. 1～2', 'C. 2～3', 'D. 3～4'],
+    answer: 'B'
+},
+{
+    id: 190,
+    type: '单选题',
+    question: '当流过人体的电流达到(　__)时，就足以使人死亡。',
+    options: ['A. 0.1mA', 'B. 1mA', 'C. 15mA', 'D. 100mA'],
+    answer: 'D'
+},
+    {
+        "id": 191,
+        "type": "单选题",
+        "question": "在供电为短路接地的电网系统中，人体触及外壳带电设备的一点同站立地面一点之间的电位差称为(　__)。",
+        "options": ["A. 单相触电", "B. 两相触电", "C. 接触电压触电", "D. 跨步电压触电"],
+        "answer": "C"
+    },
+    {
+        "id": 192,
+        "type": "单选题",
+        "question": "高压设备室外不得接近故障点(　__)以内。",
+        "options": ["A. 5米", "B. 6米", "C. 7米", "D. 8米"],
+        "answer": "D"
+    },
+    {
+        "id": 193,
+        "type": "单选题",
+        "question": "下列电磁污染形式不属于自然的电磁污染的是(　__)。",
+        "options": ["A. 火山爆发", "B. 地震", "C. 雷电", "D. 射频电磁污染"],
+        "answer": "D"
+    },
+    {
+        "id": 194,
+        "type": "单选题",
+        "question": "岗位的质量要求，通常包括操作程序，工作内容，(　__)及参数控制等。",
+        "options": ["A. 工作计划", "B. 工作目的", "C. 工艺规程", "D. 操作重点"],
+        "answer": "C"
+    },
+    {
+        "id": 195,
+        "type": "单选题",
+        "question": "劳动者的基本权利包括(　__)等。",
+        "options": ["A. 完成劳动任务", "B. 提高职业技能", "C. 请假外出", "D. 提请劳动争议处理"],
+        "answer": "D"
+    },
+    {
+        "id": 196,
+        "type": "单选题",
+        "question": "喷灯是一种利用火焰喷射对工件进行加工的工具，常用于(　__)。",
+        "options": ["A. 电焊", "B. 气焊", "C. 铜焊", "D. 锡焊"],
+        "answer": "D"
+    },
+    {
+        "id": 197,
+        "type": "单选题",
+        "question": "按照所用燃料油的不同，喷灯可以分为煤油喷灯和(　__)喷灯。",
+        "options": ["A. 柴油", "B. 汽油", "C. 机油", "D. 酒精"],
+        "answer": "B"
+    },
+    {
+        "id": 198,
+        "type": "单选题",
+        "question": "喷灯火焰和带电体之间的安全距离为：10KV以上大于3m，10KV以下大于(　__)。",
+        "options": ["A. 4.5m", "B. 3.5m", "C. 2.5m", "D. 1.5m"],
+        "answer": "D"
+    },
+    {
+        "id": 199,
+        "type": "单选题",
+        "question": "喷灯使用完毕，应将剩余的燃料油(　__)，将喷灯污物擦除后，妥善保管。",
+        "options": ["A. 烧净", "B. 保存在油筒内", "C. 倒掉", "D. 倒出回收"],
+        "answer": "D"
+    },
+    {
+        "id": 200,
+        "type": "单选题",
+        "question": "塞尺由不同厚度的若干片叠合在夹板里，厚度为0.02～0.1mm组的，相邻两片间相差0.01mm，厚度为0.1～1mm组的，相邻两片间相差(　　)mm。",
+        "options": ["A. 0.01", "B. 0.02", "C. 0.04", "D. 0.05"],
+        "answer": "D"
+    },
+    {
+        "id": 201,
+        "type": "单选题",
+        "question": "车床加工的基本运动是主轴通过卡盘或顶尖带动工件旋转，溜板带动刀架做(　__)。",
+        "options": ["A. 圆弧运动", "B. 纵向运动", "C. 夹紧运动", "D. 直线运动"],
+        "answer": "B"
+    },
+    {
+        "id": 202,
+        "type": "单选题",
+        "question": "车床电源采用三相380V交流电源-由电源开关QS引入，总电源(　__)为FU。",
+        "options": ["A. 过载保护", "B. 失压保护", "C. 短路保护", "D. 欠压保护"],
+        "answer": "C"
+    },
+    {
+        "id": 203,
+        "type": "单选题",
+        "question": "CA6140型车床电动机M1短路保护由低压断路器(　__)的电磁脱扣器来实现。",
+        "options": ["A. SA", "B. QF", "C. QS", "D. SQ"],
+        "answer": "B"
+    },
+    {
+        "id": 204,
+        "type": "单选题",
+        "question": "CA6140型车床电动机M2、M3的短路保护由FU1来实现，M1和M2的过载保护是由各自的(　__)来实现的，电动机采用接触器控制。",
+        "options": ["A. 熔断器", "B. 接触器", "C. 低压断路器", "D. 热继电器"],
+        "answer": "D"
+    },
+    {
+        "id": 205,
+        "type": "单选题",
+        "question": "CA6140型车床控制线路由控制变压器TC供电，控制电源电压为110V、熔断器FU2做(　__)。",
+        "options": ["A. 欠压保护", "B. 失压保护", "C. 过载保护", "D. 短路保护"],
+        "answer": "D"
+    },
+    {
+        "id": 206,
+        "type": "单选题",
+        "question": "CA6140型车床从安全需要考虑，快速进给电动机采用点动控制，按下快速按钮就可以(　__)。",
+        "options": ["A. 主轴运动", "B. 照明灯控制", "C. 信号灯控制", "D. 快速进给"],
+        "answer": "D"
+    },
+    {
+        "id": 207,
+        "type": "单选题",
+        "question": "当CA6140型车床主电源接通后，由控制变压器6V绕组供电的指示灯HL(　__)，表示车床已接通电源，可以开始工作。",
+        "options": ["A. 灭", "B. 亮", "C. 忽亮忽灭", "D. 都不对"],
+        "answer": "B"
+    },
+    {
+        "id": 208,
+        "type": "单选题",
+        "question": "(　__)是一种用途广泛的通用机床。",
+        "options": ["A. 钻床", "B. 车床", "C. 磨床", "D. 铣床"],
+        "answer": "B"
+    },
+    {
+        "id": 209,
+        "type": "单选题",
+        "question": "Z535型钻床的照明线路由变压器TC供给24V安全电压，SA为接通或断开(　__)的开关。",
+        "options": ["A. 冷却泵电动机", "B. 主轴电动机", "C. 照明", "D. 电源"],
+        "answer": "C"
+    },
+    {
+        "id": 210,
+        "type": "单选题",
+        "question": "为了能很好地适应调速以及在满载下频繁启动，起重机都采用(　__)。",
+        "options": ["A. 三相异步电动机", "B. 同步电动机", "C. 多速异步电动机", "D. 三相绕线转子异步电动机"],
+        "answer": "D"
+    },
+    {
+        "id": 211,
+        "type": "单选题",
+        "question": "5t桥式起重机因为是在(　__)工作制下，启动频繁，故电动机不使用热继电器，而采用带一定延时的过电流继电器。",
+        "options": ["A. 断续", "B. 连续", "C. 点动", "D. 顺序"],
+        "answer": "A"
+    },
+    {
+        "id": 212,
+        "type": "单选题",
+        "question": "5t桥式起重机线路中，凸轮控制器的手柄扳到第二挡时，(　__)电阻被短接，串联电动机转子绕组中的电阻值减小，速度上升。",
+        "options": ["A. 全部", "B. 一段", "C. 极大部分", "D. 极少部分"],
+        "answer": "B"
+    },
+    {
+        "id": 213,
+        "type": "单选题",
+        "question": "5t桥式起重机线路中，凸轮控制器的手柄顺序工作到第五挡时，电阻器完全被短接，绕组中的电阻值(　__)，电动机处于最高速运转。",
+        "options": ["A. 为无穷大", "B. 增大", "C. 为零", "D. 减少"],
+        "answer": "C"
+    },
+    {
+        "id": 214,
+        "type": "单选题",
+        "question": "起重机的保护配电柜，柜中电器元件主要有：三相刀闸开关、供电用的主接触器和总电源过电流继电器及各传动电动机保护用的(　__)等。",
+        "options": ["A. 热继电器", "B. 时间继电器", "C. 电压继电器", "D. 过电流继电器"],
+        "answer": "D"
+    },
+    {
+        "id": 215,
+        "type": "单选题",
+        "question": "5t桥式起重机线路中，对总过电流继电器，其整定值应为全部电动机额定电流总和的1.5倍，或电动机功率最大一台的额定电流的(　__)倍再加上其他电动机额定电流的总和。",
+        "options": ["A. 1.0", "B. 1.5", "C. 2.0", "D. 2.5"],
+        "answer": "D"
+    },
+    {
+        "id": 216,
+        "type": "单选题",
+        "question": "5t桥式起重机线路中，各电动机的过电流继电器，通常分别整定在所保护电动机额定电流的(　__)倍。",
+        "options": ["A. 1.25～2.5", "B. 1.50～2.5", "C. 2.05～2.5", "D. 2.25～2.5"],
+        "answer": "D"
+    },
+    {
+        "id": 217,
+        "type": "单选题",
+        "question": "在5t桥式起重机线路中，为了安全，除起重机要可靠接地外，还要保证起重机轨道必须接地或重复接地，接地电阻不得大于(　__)。",
+        "options": ["A. 16Ω", "B. 10Ω", "C. 8Ω", "D. 4Ω"],
+        "answer": "D"
+    },
+    {
+        "id": 218,
+        "type": "单选题",
+        "question": "常见维修电工图的种类有：系统图和框图，电路图，(　__)。",
+        "options": ["A. 成套设备配线简图", "B. 设备简图", "C. 装置的内部连接简图", "D. 接线图"],
+        "answer": "D"
+    },
+    {
+        "id": 219,
+        "type": "单选题",
+        "question": "接线图以粗实线画(　__)，以细实线画辅助回路。",
+        "options": ["A. 辅助回路", "B. 主回路", "C. 控制回路", "D. 照明回路"],
+        "answer": "B"
+    },
+    {
+        "id": 220,
+        "type": "单选题",
+        "question": "识图的基本步骤：看图样说明，看(　__)，看安装线路图。",
+        "options": ["A. 主电路", "B. 辅助回路", "C. 电气原理图", "D. 各条回路"],
+        "answer": "C"
+    },
+    {
+        "id": 221,
+        "type": "单选题",
+        "question": "用绝缘带包缠导线恢复绝缘时，要注意不能过疏，更不允许露出芯线，以免发生(　__)。",
+        "options": ["A. 触电事故", "B. 短路事故", "C. 断路事故", "D. 触电或短路事故"],
+        "answer": "D"
+    },
+    {
+        "id": 222,
+        "type": "单选题",
+        "question": "电缆线路故障的原因有：机械损伤、护层腐蚀、(　__)、过热。",
+        "options": ["A. 雷击", "B. 过电流", "C. 过电压", "D. 过电容"],
+        "answer": "A"
+    },
+    {
+        "id": 223,
+        "type": "单选题",
+        "question": "长期运行的母线槽至少每年定期维修检查(　__)。",
+        "options": ["A. 五次", "B. 三次", "C. 两次", "D. 一次"],
+        "answer": "D"
+    },
+    {
+        "id": 224,
+        "type": "单选题",
+        "question": "工作接地的(　__)每隔半年或一年检查一次。",
+        "options": ["A. 电压", "B. 接地电阻", "C. 电流", "D. 电容"],
+        "answer": "B"
+    },
+    {
+        "id": 225,
+        "type": "单选题",
+        "question": "拆除风扇罩及风扇叶轮时，将固定风扇罩的螺钉拧下来，用木锤在与轴平行的方向从不同的位置上(　__)风扇罩。",
+        "options": ["A. 向内敲打", "B. 向上敲打", "C. 向上敲打", "D. 向外敲打"],
+        "answer": "D"
+    },
+    {
+        "id": 226,
+        "type": "单选题",
+        "question": "电动机装轴承时，用煤油将轴承及轴承盖清洗干净，检查轴承有无裂纹、是否灵活、(　__)，如有问题则需更换。",
+        "options": ["A. 间隙是否过小", "B. 是否无间隙", "C. 间隙是否过大", "D. 变化很大"],
+        "answer": "C"
+    },
+    {
+        "id": 227,
+        "type": "单选题",
+        "question": "安装转子时，转子对准定子中心，沿着定子圆周的中心线将缓缓地向定子里送进，送进过程中(　__)定子绕组。",
+        "options": ["A. 不得接触", "B. 互相碰擦", "C. 远离", "D. 不得碰擦"],
+        "answer": "D"
+    },
+    {
+        "id": 228,
+        "type": "单选题",
+        "question": "三相异步电动机的常见故障有：电动机过热、电动机振动、(　__)。",
+        "options": ["A. 将三角形连接误接为星形连接", "B. 笼条断裂", "C. 绕组头尾接反", "D. 电动机启动后转速低或转矩小"],
+        "answer": "D"
+    },
+    {
+        "id": 229,
+        "type": "单选题",
+        "question": "用兆欧表逐相测量定子绕组与外壳的绝缘电阻，当转动摇柄时，指针指到(　__)，说明绕组接地。",
+        "options": ["A. 无穷大", "B. 中间位置", "C. 零", "D. 满刻度2/3"],
+        "answer": "C"
+    },
+    {
+        "id": 230,
+        "type": "单选题",
+        "question": "三相异步电动机定子绕组检修时，用短路探测器检查短路点，若检查的线圈有短路，则串在探测器回路的(　__)读数就大。",
+        "options": ["A. 电压表", "B. 电阻表", "C. 电流表", "D. 万用表"],
+        "answer": "C"
+    },
+    {
+        "id": 231,
+        "type": "单选题",
+        "question": "三相异步电动机定子绕组用电压降压法检修时，为查出某一相短路故障，先在另一相加入低压交流电，在另外两相测感应电压，有短路的那相的感应电压(　　)。",
+        "options": [
+            "A、无穷大",
+            "B、为零",
+            "C、偏大",
+            "D、偏小"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 232,
+        "type": "单选题",
+        "question": "测定电动机绕线组冷态直流电阻时，大于1Ω可用(　　)。",
+        "options": [
+            "A、双臂电桥",
+            "B、单臂电桥",
+            "C、摇表",
+            "D、接地摇表"
+        ],
+        "answer": "A"
+    },
+    {
+        "id": 233,
+        "type": "单选题",
+        "question": "电动机绝缘电阻的测量，对500V以上的电动机，应采用(　　)的兆欧表。",
+        "options": [
+            "A、380V",
+            "B、500V",
+            "C、1000V",
+            "D、1000V或2500V"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 234,
+        "type": "单选题",
+        "question": "电动机绝缘电阻的测量，对于常用的低压电动机，3～6kV的高压电阻不得(　　)20MΩ。",
+        "options": [
+            "A、低于",
+            "B、高于",
+            "C、等于",
+            "D、大于等于"
+        ],
+        "answer": "A"
+    },
+    {
+        "id": 235,
+        "type": "单选题",
+        "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是局部修理时，试验电压可低些，低压电机的实验电压为额定电压再加上(　　)。",
+        "options": [
+            "A、127V",
+            "B、220V",
+            "C、380V",
+            "D、500V"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 236,
+        "type": "单选题",
+        "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是局部修理时，对于(　　)以下的电机，若无高压实验设备，可用1000V的兆欧表作为实验电源，摇测1min。",
+        "options": [
+            "A、110V",
+            "B、220V",
+            "C、380V",
+            "D、500V"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 237,
+        "type": "单选题",
+        "question": "小型变压器的修理，接通电源无电压输出时，若一次回路有较小的电流，而二次回路(　　)，则一般是二次绕组的出线端头断裂。",
+        "options": [
+            "A、有电压无电流",
+            "B、无电压有电流",
+            "C、有较大电流",
+            "D、既无电压也无电流"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 238,
+        "type": "单选题",
+        "question": "小型变压器线圈的绝缘处理，将线圈放在电烘箱内加温到70～80℃，保温6h，然后立即侵入绝缘清漆中约0.5h，取出后放在通风处阴干，再放进烘箱加温到(　　)，烘12h即可。",
+        "options": [
+            "A、60℃",
+            "B、70℃",
+            "C、80℃",
+            "D、90℃"
+        ],
+        "answer": "C"
+    },
+    {
+        "id": 239,
+        "type": "单选题",
+        "question": "小型变压器绝缘电阻测试，用兆欧表测量各绕组之间和它们对铁心的绝缘电阻，其值(　　)1MΩ。",
+        "options": [
+            "A、等于",
+            "B、不应高于",
+            "C、不应低于",
+            "D、低于"
+        ],
+        "answer": "C"
+    },
+    {
+        "id": 240,
+        "type": "单选题",
+        "question": "小型变压器空载电压的测试，一次侧加上额定电压，测量二次侧空载电压的允许误差应小于(　　)。",
+        "options": [
+            "A、±40%",
+            "B、±30%",
+            "C、±20%",
+            "D、±10%"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 241,
+        "type": "单选题",
+        "question": "接触器触点的整形修理时，当电流过大、灭弧装置失效、触点容量过小或因触点弹簧损坏，初压力(　　)时，触点闭合或断开电路时会产生电弧。",
+        "options": [
+            "A、过大",
+            "B、不变",
+            "C、过小",
+            "D、为无穷大"
+        ],
+        "answer": "C"
+    },
+    {
+        "id": 242,
+        "type": "单选题",
+        "question": "接触器触点的超程是指触点(　　)后，动触点发生的位移。",
+        "options": [
+            "A、分开一半",
+            "B、闭合一半",
+            "C、完全分开",
+            "D、完全闭和"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 243,
+        "type": "单选题",
+        "question": "测量接触器桥式触点终压力，测量时要注意拉力方向应(　　)触点接触线方向。",
+        "options": [
+            "A、平行于",
+            "B、对准于",
+            "C、相交于",
+            "D、垂直于"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 244,
+        "type": "单选题",
+        "question": "接触器的(　　)通断时，三相应保证同时通断，其先后误差不得超过0.5ms。",
+        "options": [
+            "A、辅助触头",
+            "B、主触点",
+            "C、常闭触头",
+            "D、常开触头"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 245,
+        "type": "单选题",
+        "question": "热继电器的环境温度与电动机的环境温度，一般相差15-20oC时，修正值约为(　　)。",
+        "options": [
+            "A、40%",
+            "B、30%",
+            "C、20%",
+            "D、10%"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 246,
+        "type": "单选题",
+        "question": "电磁式继电器检测与要求，对于一般桥式触点，吸合时的超额行程不小于(　　)。",
+        "options": [
+            "A、4.5mm",
+            "B、3.5mm",
+            "C、2.5mm",
+            "D、1.5mm"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 247,
+        "type": "单选题",
+        "question": "过电流继电器动作值的整定，对于直流继电器应按电动机最大工作冲击电流的(　　)进行整定。",
+        "options": [
+            "A、80%-85%",
+            "B、90%-95%",
+            "C、100%-105%",
+            "D、110%-115%"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 248,
+        "type": "单选题",
+        "question": "时间继电器的整定，延时在3s以下的一般时间继电器采用(　　)取时间，靠时间继电器的延时触点控制的方法来记取时间。",
+        "options": [
+            "A、手表",
+            "B、跑表",
+            "C、电气秒表",
+            "D、其它"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 249,
+        "type": "单选题",
+        "question": "低压断路器触点的磨损超过厚度的(　　)以上或超程减少到1/2时，就应更换新触点。",
+        "options": [
+            "A、1/2",
+            "B、1/3",
+            "C、1/4",
+            "D、1/5"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 250,
+        "type": "单选题",
+        "question": "检修CA6140型车床时，按停止按钮，主轴不停转的原因是(　　)。",
+        "options": [
+            "A、接触器主触点因熔焊而粘死",
+            "B、接触器内部有机械卡死现象",
+            "C、按钮常闭触头不能断开",
+            "D、以上都正确"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 251,
+        "type": "单选题",
+        "question": "接地系统中，人工接地体不应放在车间内，最好离开车间门及人行道5m，不得小于(　　)。",
+        "options": [
+            "A、5.5m",
+            "B、4.5m",
+            "C、3.5m",
+            "D、2.5m"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 252,
+        "type": "单选题",
+        "question": "三相异步电动机在刚启动的瞬间，定子中的启动电流是其额定电流的(　　)倍。",
+        "options": [
+            "A、3-7",
+            "B、6-7",
+            "C、5-7",
+            "D、4-7"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 253,
+        "type": "单选题",
+        "question": "频敏变阻器的特点是它的电阻值随转速的(　　)而自动平滑地减小，使电动机能够平稳地启动，但其功率因数较低。",
+        "options": [
+            "A、下降",
+            "B、上升",
+            "C、减少",
+            "D、增加"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 254,
+        "type": "单选题",
+        "question": "三相异步电动机在转子电路串接电阻时，转子回路串接不同阻值的电阻，阻值越大，特性越软，在一定转矩时转速(　　)。",
+        "options": [
+            "A、也就越高",
+            "B、为零",
+            "C、为无穷大",
+            "D、也就越低"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 255,
+        "type": "单选题",
+        "question": "由于变压器一次、二次绕组有电阻和漏感，负载电流通过这些漏阻抗产生内部(　　)，其二次侧端电压随负载的变化而变化。",
+        "options": [
+            "A、电流降",
+            "B、电阻降",
+            "C、电压降",
+            "D、电容降"
+        ],
+        "answer": "C"
+    },
+    {
+        "id": 256,
+        "type": "单选题",
+        "question": "配电板可用2.5—3mm (　　)制作，上面覆盖一张1mm左右的布质酚醛层压板。",
+        "options": [
+            "A、木版",
+            "B、钢板",
+            "C、绝缘板",
+            "D、铁板"
+        ],
+        "answer": "D"
+    },
+    {
+        "id": 257,
+        "type": "单选题",
+        "question": "配电板的尺寸要小于配电柜门框的尺寸，还要考虑到(　　)安装后配电板能自由进出柜门。",
+        "options": [
+            "A、熔断器",
+            "B、接触器",
+            "C、电器元件",
+            "D、按钮"
+        ],
+        "answer": "C"
+    },
+    {
+        "id": 258,
+        "type": "单选题",
+        "question": "备齐所有的元器件，将元器件进行(　　)排列，元器件布局要合理。",
+        "options": [
+            "A、实际",
+            "B、模拟",
+            "C、按要求",
+            "D、按图纸"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 259,
+        "type": "单选题",
+        "question": "用划针在底板上画出元器件的(　　)孔位置，然后拿开所有的元器件。",
+        "options": [
+            "A、拆装",
+            "B、固定",
+            "C、拆卸",
+            "D、装配"
+        ],
+        "answer": "B"
+    },
+    {
+        "id": 260,
+        "type": "单选题",
+        "question": "安装接触器时，要求散热孔(　　)。",
+        "options": [
+            "A、朝右",
+            "B、朝左",
+            "C、朝下",
+            "D、朝上"
+        ],
+        "answer": "D"
+    },
+{
+    id: 261,
+    type: '单选题',
+    question: '主回路的连接线一般采用较粗的(　　)单股塑料铜芯线。',
+    options: ['A. 0.75mm²', 'B. 1mm²', 'C. 1.5mm²', 'D. 2.5mm²'],
+    answer: 'D'
+},
+{
+    id: 262,
+    type: '单选题',
+    question: '控制回路一般采用1mm²的(　　)。',
+    options: ['A. 多股塑料铝芯线', 'B. 单股塑料铝芯线', 'C. 多股塑料铜芯线', 'D. 单股塑料铜芯线'],
+    answer: 'D'
+},
+{
+    id: 263,
+    type: '单选题',
+    question: '检查主回路和控制回路的(　　)是否合理、正确，所有(　　)螺钉是否拧紧、牢固。',
+    options: ['A. 布线，接线', 'B. 布线，导线', 'C. 接线，布线', 'D. 导线，布线'],
+    answer: 'A'
+},
+{
+    id: 264,
+    type: '单选题',
+    question: '专用继电器是一种根据电量或非电量的变化，接通或断开小电流(　__)。',
+    options: ['A. 主电路', 'B. 主电路和控制电路', 'C. 辅助电路', 'D. 控制电路'],
+    answer: 'D'
+},
+{
+    id: 265,
+    type: '单选题',
+    question: '(　__)是反映转速和转向的继电器，其主要作用是以旋转速度的快慢为指令信号。',
+    options: ['A. 速度继电器', 'B. 压力继电器', 'C. 中间继电器', 'D. 温度继电器'],
+    answer: 'A'
+},
+{
+    id: 266,
+    type: '单选题',
+    question: '在速度继电器的型号及含义中，以JFZO为例，其中O代表(　__)。',
+    options: ['A. 规格序号', 'B. 触头数', 'C. 转速等级', 'D. 设计序号'],
+    answer: 'C'
+},
+{
+    id: 267,
+    type: '单选题',
+    question: 'JY1型速度继电器触头额定电压380V，触头额定电流(　__)，额定工作转速100—3000r/min，允许操作频率小于30次/h。',
+    options: ['A. 2A', 'B. 3A', 'C. 4A', 'D. 5A'],
+    answer: 'A'
+},
+{
+    id: 268,
+    type: '单选题',
+    question: '速度继电器的弹性动触片调整的规律为，将调整螺钉向下旋，弹性动触片弹性增大，速度(　__)时继电器才动作。',
+    options: ['A. 较低', 'B. 为零', 'C. 不变', 'D. 较高'],
+    answer: 'A'
+},
+{
+    id: 269,
+    type: '单选题',
+    question: '速度继电器的弹性动触片调整的规律是将调整螺钉向上旋，弹性动触片弹性减小，速度(　__)时继电器即动作。',
+    options: ['A. 较高', 'B. 不变', 'C. 为零', 'D. 较低'],
+    answer: 'D'
+},
+{
+    id: 270,
+    type: '单选题',
+    question: '温度继电器广泛应用于电动机绕组、大功率晶体管等器件的(　__)。',
+    options: ['A. 短路保护', 'B. 过电流保护', 'C. 过电压保护', 'D. 过热保护'],
+    answer: 'D'
+},
+{
+    id: 271,
+    type: '单选题',
+    question: '热敏电阻式温度继电器应用较广，它的外形同一般(　__)时间继电器相似。',
+    options: ['A. 电动式', 'B. 空气阻尼式', 'C. 晶体管式', 'D. 电磁式'],
+    answer: 'C'
+},
+{
+    id: 272,
+    type: '单选题',
+    question: '热敏电阻式温度继电器当温度在65℃以下时，热敏电阻为恒定值，电桥处于(　__)状态，执行继电器不动作。',
+    options: ['A. 不平衡', 'B. 恒定', 'C. 平衡', 'D. 稳定'],
+    answer: 'C'
+},
+{
+    id: 273,
+    type: '单选题',
+    question: 'YJ-O系列的压力继电器技术数据中，最大控制压力为6.0795102√a，最小控制压力为(　__)√a。',
+    options: ['A. 2.0265102', 'B. 3.0265102', 'C. 4.0265102', 'D. 5.0265102'],
+    answer: 'A'
+},
+{
+    id: 274,
+    type: '单选题',
+    question: '晶体管时间继电器也称半导体时间继电器，是(　__)系统中的重要元件。',
+    options: ['A. 电力拖动', 'B. 机械设备', 'C. 自动控制', 'D. 操纵控制'],
+    answer: 'C'
+},
+{
+    id: 275,
+    type: '单选题',
+    question: '当控制电路要求延时精度较高时，选用(　__)时间继电器。',
+    options: ['A. 电磁式', 'B. 电动式', 'C. 空气阻尼式', 'D. 晶体管'],
+    answer: 'D'
+},
+{
+    id: 276,
+    type: '单选题',
+    question: '安装时，首先将电子元件的引线除锈搪锡，再用钳子夹持引线根部，将引线弯成(　__)，然后插入底板的孔中。',
+    options: ['A. 90°', 'B. 60°', 'C. 45°', 'D. 30°'],
+    answer: 'A'
+},
+{
+    id: 277,
+    type: '单选题',
+    question: '用仪表检测电子元件的安装与焊接时，检测是否有(　__)现象。',
+    options: ['A. 短路', 'B. 断路', 'C. 短路、断路', 'D. 接地'],
+    answer: 'C'
+},
+{
+    id: 278,
+    type: '单选题',
+    question: '多股铜导线的连接剥去适当长度的绝缘层，用钳子把各导线逐根拉直，再将导线顺次散开成(　__)伞状。',
+    options: ['A. 15°', 'B. 30°', 'C. 45°', 'D. 60°'],
+    answer: 'B'
+},
+{
+    id: 279,
+    type: '单选题',
+    question: '导线连接后，需要恢复绝缘，绝缘强度(　__)原有绝缘层。',
+    options: ['A. 不高于', 'B. 等于', 'C. 不低于', 'D. 低于'],
+    answer: 'C'
+},
+{
+    id: 280,
+    type: '单选题',
+    question: '导线恢复绝缘时，黄腊带与导线保持约55°的倾斜角，每圈压叠带宽的(　__)。',
+    options: ['A. 1/2', 'B. 1/3', 'C. 2/3', 'D. 3/4'],
+    answer: 'A'
+},
+{
+    id: 281,
+    type: '单选题',
+    question: '直径19mm以下电线管的线管配线时，穿管导线的总面积不得超过线管内径截面积的(　__)。',
+    options: ['A. 20%', 'B. 40%', 'C. 60%', 'D. 80%'],
+    answer: 'B'
+},
+{
+    id: 282,
+    type: '单选题',
+    question: '钢管与钢管、配电箱及接线盒等处的配线，用直径为6-10mm圆钢制成的跨接线连接时，所有线管上的(　__)都可靠接地。',
+    options: ['A. 任何元件', 'B. 箍', 'C. 金属元件', 'D. 以上说法都不正确'],
+    answer: 'C'
+},
+{
+    id: 283,
+    type: '单选题',
+    question: '管内配线时，管内导线一般不允许超过10根，(　__)线管内不允许穿不同电压或不同电度表的导线。',
+    options: ['A. 不同根', 'B. 同一根', 'C. 两根', 'D. 三根'],
+    answer: 'B'
+},
+{
+    id: 284,
+    type: '单选题',
+    question: '管线配线时，导线的绝缘强度不低于500V，导线最小截面铜芯线为(　__)，铝芯线为2.5mm²。',
+    options: ['A. 0.5mm²', 'B. 0.75mm²', 'C. 1mm²', 'D. 1.5mm²'],
+    answer: 'C'
+},
+{
+    id: 285,
+    type: '单选题',
+    question: '控制箱内外所有(　__)的编号，必须与电气原理图上的编号完全一致。',
+    options: ['A. 电气设备', 'B. 电气元件', 'C. 导线', 'D. 含A、B两项'],
+    answer: 'D'
+},
+{
+    id: 286,
+    type: '单选题',
+    question: '为了防止虚焊，(　__)的引线均应预先镀锡。',
+    options: ['A. 重要元件', 'B. 次要元件', 'C. 一般元件', 'D. 所有元件'],
+    answer: 'D'
+},
+{
+    id: 287,
+    type: '单选题',
+    question: '焊点距管壳(　__)10mm，电烙铁功率一般不大于45W，焊接时间不超过5s。',
+    options: ['A. 不小于', 'B. 不大于', 'C. 小于', 'D. 等于'],
+    answer: 'A'
+},
+{
+    id: 288,
+    type: '单选题',
+    question: '晶体管工作在放大状态时，发射结正偏，对于硅管约为0.7V，锗管约为(　__)。',
+    options: ['A. 0.2V', 'B. 0.3V', 'C. 0.5V', 'D. 0.7V'],
+    answer: 'B'
+},
+{
+    id: 289,
+    type: '单选题',
+    question: '单管电压放大电路的动态分析时的交流通路，由于耦合电容C1、C2对交流的容抗很小，可把C1、C2看成是短路，直流电源Ucc的内阻很小，所以可把Ucc看成是(　__)。',
+    options: ['A. 断路', 'B. 开路', 'C. 接通', 'D. 短路'],
+    answer: 'D'
+},
+{
+    id: 290,
+    type: '单选题',
+    question: '单管电压放大电路的动态分析时的电压放大过程，放大电路在直流电源和交流信号的作用下，电路中(　__)既有直流分量，又有交流分量。',
+    options: ['A. 电阻', 'B. 电容', 'C. 电流和电压', 'D. 三极管'],
+    answer: 'C'
+},
+{
+    id: 291,
+    type: '单选题',
+    question: '把放大电路的输出信号电压或电流的一部分或全部通过反馈电路，送回到输入端的过程叫(　__)。',
+    options: ['A. 交流反馈', 'B. 直流反馈', 'C. 截止', 'D. 反馈'],
+    answer: 'D'
+},
+{
+    id: 292,
+    type: '单选题',
+    question: '若反馈到输入端的是交流量，称为交流反馈，它能改善(　__)的性能。',
+    options: ['A. 直流通路', 'B. 交流通路', 'C. 直流电路', 'D. 交流电路'],
+    answer: 'D'
+},
+{
+    id: 293,
+    type: '单选题',
+    question: '若反馈到输入端的是直流量，则称为直流负反馈，它能稳定(　__)。',
+    options: ['A. 直流负载线', 'B. 基极偏置电流', 'C. 集电极电压', 'D. 静态工作点'],
+    answer: 'D'
+},
+{
+    id: 294,
+    type: '单选题',
+    question: '振荡电路产生自激振荡的振幅条件是：反馈到放大器输入端的电压幅值必须等于或大于放大器的原输入(　__)幅值。',
+    options: ['A. 电流', 'B. 电阻', 'C. 电容', 'D. 电压'],
+    answer: 'D'
+},
+{
+    id: 295,
+    type: '单选题',
+    question: '变压器耦合式振荡器电路，当振荡电路接通电源瞬间，在集电极电路中激起一个微小的(　__)变化。',
+    options: ['A. 电容', 'B. 电阻', 'C. 电压', 'D. 电流'],
+    answer: 'D'
+},
+{
+    id: 296,
+    type: '单选题',
+    question: '静态工作点稳定的放大回路中，当温度升高时，集电极静态(　__)，造成静态工作点上移，靠近饱和区，容易引起饱和失真。',
+    options: ['A. 电流降低', 'B. 电压降低', 'C. 电流增大', 'D. 电压增大'],
+    answer: 'C'
+},
+{
+    id: 297,
+    type: '单选题',
+    question: '整流电路是利用(　__)的单向导电性，将交流电压变换成单方向的脉动直流电压。',
+    options: ['A. 三极管', 'B. 二极管', 'C. 晶闸管', 'D. 可控硅管'],
+    answer: 'B'
+},
+{
+    id: 298,
+    type: '单选题',
+    question: '对于电动机不经常启动而且启动时间不长的电路，熔体(　__)约等于电动机额定电流的1.5倍。',
+    options: ['A. 额定电流', 'B. 额定电压', 'C. 电流', 'D. 电压'],
+    answer: 'A'
+},
+{
+    id: 299,
+    type: '单选题',
+    question: '多台交流电动机线路总熔体的额定电流，约等于线路上功率最大一台电动机电流的1.5-2.5倍，再加上其他电动机(　__)的总和。',
+    options: ['A. 电压', 'B. 电流', 'C. 额定电压', 'D. 额定电流'],
+    answer: 'D'
+},
+{
+    id: 300,
+    type: '单选题',
+    question: '刀开关的额定电压应等于或大于电路额定电压，其(　__)应等于或稍大于电路的工作电流。',
+    options: ['A. 电流', 'B. 电压', 'C. 额定电流', 'D. 额定电压'],
+    answer: 'C'
+},
+  {
+        "id": 301,
+        "type": "单选题",
+        "question": "低压断路器的热脱扣器的整定电流(　　)所控负载的额定电流。",
+        "options": ["A. 大于", "B. 小于", "C. 等于", "D. 大于等于"],
+        "answer": "C"
+    },
+    {
+        "id": 302,
+        "type": "单选题",
+        "question": "CA6140型车床的调试前准备时，应将有关的(　　)和安装、使用、维修、调试说明准备好。",
+        "options": ["A. 图样", "B. 电路图", "C. 技术说明", "D. 电气设备明细表"],
+        "answer": "A"
+    },
+    {
+        "id": 303,
+        "type": "单选题",
+        "question": "CA6140型车床的调试前准备时，应将电工工具、兆欧表、万用表和(　　)准备好。",
+        "options": ["A. 电压表", "B. 电流表", "C. 转速表", "D. 钳形电流表"],
+        "answer": "D"
+    },
+ {
+        "id": 304,
+        "type": "单选题",
+        "question": "CA6140型车床的调试前准备时，测量电动机M1、M2、M3绕组间、对地绝缘电阻是否大于(　　)兆欧。",
+        "options": ["A. 3", "B. 2", "C. 1", "D. 0.5"],
+        "answer": "D"
+    },
+    {
+        "id": 305,
+        "type": "单选题",
+        "question": "CA6140型车床的调试前准备时，测量线路对地电阻是否大于(　　)兆欧。",
+        "options": ["A. 0.5", "B. 1", "C. 2", "D. 3"],
+        "answer": "D"
+    },
+    {
+        "id": 306,
+        "type": "单选题",
+        "question": "CA6140型车床的调试前准备时，检查电动机是否转动灵活，(　　)有无缺油等现象。",
+        "options": ["A. 各个部件", "B. 各个电气元件", "C. 轴承", "D. 主要部件"],
+        "answer": "C"
+    },
+    {
+        "id": 307,
+        "type": "单选题",
+        "question": "CA6140型车床的调试时，控制回路试车时，先接通低压断路器QS，检查熔断器FU1前后有无380V(　　)。",
+        "options": ["A. 电流", "B. 电阻", "C. 直流电压", "D. 电压"],
+        "answer": "D"
+    },
+    {
+        "id": 308,
+        "type": "单选题",
+        "question": "CA6140型车床的调试时，控制回路试车时，检查控制变压器一次侧为(　　)、二次侧为24V、6V、110V。",
+        "options": ["A. 500V", "B. 380V", "C. 127V", "D. 36V"],
+        "answer": "B"
+    },
+    {
+        "id": 309,
+        "type": "单选题",
+        "question": "CA6140型车床主回路加电试车时，经过一段时间试运行，观察、检查电动机有无异常响声、异味、冒烟、振动和(　　)等异常现象。",
+        "options": ["A. 温升过低", "B. 温升过高", "C. 温升不高于", "D. 温升不低于"],
+        "answer": "B"
+    },
+    {
+        "id": 310,
+        "type": "单选题",
+        "question": "Z535钻床调试前的准备时，将电工工具、兆欧表、(　　)和钳形电流表准备好。",
+        "options": ["A. 电流表", "B. 万用表", "C. 电压表", "D. 转速表"],
+        "answer": "B"
+    },
+    {
+        "id": 311,
+        "type": "单选题",
+        "question": "Z535钻床调试前的准备时，测量电动机M1、M2各绕组间和对地的绝缘电阻是否(　　)0.5兆欧。",
+        "options": ["A. 小于", "B. 大于", "C. 等于", "D. 大于等于"],
+        "answer": "B"
+    },
+{
+    "id": 312,
+    "type": "单选题",
+    "question": "Z535钻床调试前的准备时，检查电动机(　　)，轴承有无缺油等异常现象。",
+    "options": ["A. 是否转动灵活", "B. 转动卡死", "C. 有阻滞", "D. 损坏"],
+    "answer": "A"
+},
+{
+    "id": 313,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量FU1进线处应有三相(　　)V交流电压。",
+    "options": ["A. 500", "B. 380", "C. 127", "D. 36"],
+    "answer": "B"
+},
+{
+    "id": 314,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器一次侧有380V、220V(　　)。",
+    "options": ["A. 电阻", "B. 交流电压", "C. 电流", "D. 直流电压"],
+    "answer": "B"
+},
+{
+    "id": 315,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器二次侧有(　　)交流电压。",
+    "options": ["A. 127V", "B. 24V", "C. 36V", "D. 12V"],
+    "answer": "A"
+},
+{
+    "id": 316,
+    "type": "单选题",
+    "question": "用手转动电动机转轴，观察电动机转动是否灵活，有无(　　)现象。",
+    "options": ["A. 噪音", "B. 卡住", "C. 不灵活", "D. 躁声及卡住"],
+    "answer": "D"
+},
+{
+    "id": 317,
+    "type": "单选题",
+    "question": "电动机启动后，注意(　　)电动机有无异常声音及转向是否正确。",
+    "options": ["A. 听", "B. 听和观察", "C. 观察", "D. 测试"],
+    "answer": "B"
+},
+{
+    "id": 318,
+    "type": "单选题",
+    "question": "启动电动机前，应用钳形电流表卡住电动机三根引线的其中一根，测量电动机的(　　)。",
+    "options": ["A. 运行电流", "B. 启动电阻", "C. 启动电流", "D. 启动电流"],
+    "answer": "C"
+},
+{
+    "id": 319,
+    "type": "单选题",
+    "question": "电动机的启动电流一般是额定电流的(　　)倍。",
+    "options": ["A. 4-6", "B. 3-6", "C. 4-7", "D. 5-7"],
+    "answer": "A"
+},
+{
+    "id": 320,
+    "type": "单选题",
+    "question": "电动机三相电流正常，使电动机运行(　　)，运行中经常测试电动机的外壳温度。",
+    "options": ["A. 50min", "B. 40min", "C. 30min", "D. 20min"],
+    "answer": "C"
+},
+{
+    "id": 321,
+    "type": "单选题",
+    "question": "市场经济条件下，职业道德最终将对企业起到(　　)的作用。",
+    "options": ["A. 决策科学化", "B. 提高竞争力", "C. 决定经济效益", "D. 决定前途与命运"],
+    "answer": "B"
+},
+{
+    "id": 322,
+    "type": "单选题",
+    "question": "对待职业和岗位，(　　)并不是爱岗敬业所要求的。",
+    "options": ["A. 树立职业理想", "B. 干一行爱一行专一行", "C. 遵守企业规章制度", "D. 一职定终身，不改行"],
+    "answer": "D"
+},
+{
+    "id": 323,
+    "type": "单选题",
+    "question": "办事公道是指从业人员在进行职业活动时要做到(　　)。",
+    "options": ["A. 追求真理，坚持原则", "B. 有求必应，助人为乐", "C. 公私不分，一切平等", "D. 知人善任，提拔知已"],
+    "answer": "A"
+},
+{
+    "id": 324,
+    "type": "单选题",
+    "question": "企业生产经营活动中，要求员工遵纪守法是(　　)。",
+    "options": ["A. 约束人的体现", "B. 保证经济活动正常进行所决定的", "C. 领导者人为的规定", "D. 追求利益的体现"],
+    "answer": "B"
+},
+{
+    "id": 325,
+    "type": "单选题",
+    "question": "在电源内部由(　　)，即从低电位指向高电位。",
+    "options": ["A. 正极指向正极", "B. 负极指向负极", "C. 负极指向正极", "D. 正极指向负极"],
+    "answer": "C"
+},
+{
+    "id": 326,
+    "type": "单选题",
+    "question": "电阻器反映导体对电流起阻碍作用的大小，简称(　　)。",
+    "options": ["A. 电动势", "B. 功率", "C. 电阻率", "D. 电阻"],
+    "answer": "D"
+},
+{
+    "id": 327,
+    "type": "单选题",
+    "question": "(　　)反映了在不含电源的一段电路中，电流与这段电路两端的电压及电阻的关系。",
+    "options": ["A. 欧姆定律", "B. 楞次定律", "C. 部分电路欧姆定律", "D. 全欧姆定律"],
+    "answer": "C"
+},
+{
+    "id": 328,
+    "type": "单选题",
+    "question": "(　　)的一端连在电路中的一点，另一端也同时连在另一点，使每个电阻两端都承受相同的电压，这种联结方式叫电阻的并联。",
+    "options": ["A. 两个相同电阻", "B. 一大一小电阻", "C. 几个相同大小的电阻", "D. 几个电阻"],
+    "answer": "D"
+},
+{
+    "id": 329,
+    "type": "单选题",
+    "question": "电容器串联时每个电容器上的电荷量(　　)。",
+    "options": ["A. 之和", "B. 相等", "C. 倒数之和", "D. 成反比"],
+    "answer": "B"
+},
+{
+    "id": 330,
+    "type": "单选题",
+    "question": "如图所示，不计电压表和电流表的内阻对电路的影响。开关接2时，电流表的电流为(　　)。",
+    "options": ["A. 0A", "B. 10A", "C. 0.2A", "D. 约等于0.2A"],
+    "answer": "D"
+},
+{
+    "id": 331,
+    "type": "单选题",
+    "question": "在(　　)，磁力线由S极指向N极。",
+    "options": ["A. 磁场外部", "B. 磁体内部", "C. 磁场两端", "D. 磁场一端到另一端"],
+    "answer": "B"
+},
+{
+    "id": 332,
+    "type": "单选题",
+    "question": "当直导体和磁场垂直时，电磁力的大小与直导体电流大小成(　　)。",
+    "options": ["A. 反比", "B. 正比", "C. 相等", "D. 相反"],
+    "answer": "B"
+},
+{
+    "id": 333,
+    "type": "单选题",
+    "question": "当线圈中的磁通减小时，感应电流产生的磁通与原磁通方向(　　)。",
+    "options": ["A. 正比", "B. 反比", "C. 相反", "D. 相同"],
+    "answer": "D"
+},
+{
+    "id": 334,
+    "type": "单选题",
+    "question": "正弦交流电常用的表达方法有(　　)。",
+    "options": ["A. 解析式表示法", "B. 波形图表示法", "C. 相量表示法", "D. 以上都是"],
+    "answer": "D"
+},
+{
+    "id": 335,
+    "type": "单选题",
+    "question": "电容两端的电压滞后电流(　　)。",
+    "options": ["A. 30°", "B. 90°", "C. 180°", "D. 360°"],
+    "answer": "B"
+},
+{
+    "id": 336,
+    "type": "单选题",
+    "question": "每相绕组两端的电压称相电压。它们的相位(　　)。",
+    "options": ["A. 45°", "B. 90°", "C. 120°", "D. 180°"],
+    "answer": "C"
+},
+{
+    "id": 337,
+    "type": "单选题",
+    "question": "将变压器的一次侧绕组接交流电源，二次侧绕组开路，这种运行方式称为变压器(　　)运行。",
+    "options": ["A. 空载", "B. 过载", "C. 满载", "D. 负载"],
+    "answer": "A"
+},
+{
+    "id": 338,
+    "type": "单选题",
+    "question": "当ωt=0°时，ｉ1、ｉ2、ｉ3分别为(　　)。",
+    "options": ["A. 0、负值、正值", "B. 0、正值、负值", "C. 负值、0、正值", "D. 负值、正值、0"],
+    "answer": "B"
+},
+{
+    "id": 339,
+    "type": "单选题",
+    "question": "启动按钮优先选用(　　)色按钮；急停按钮应选用(　　)色按钮，停止按钮优先选用(　　)色按钮。",
+    "options": ["A. 绿、黑、红", "B. 白、红、红", "C. 绿、红、黑", "D. 白、红、黑"],
+    "answer": "C"
+},
+{
+    "id": 340,
+    "type": "单选题",
+    "question": "导通后二极管两端电压变化很小，锗管约为(　　)。",
+    "options": ["A. 0.5V", "B. 0.7V", "C. 0.3V", "D. 0.1V"],
+    "answer": "C"
+},
+{
+    "id": 341,
+    "type": "单选题",
+    "question": "由三极管组成的放大电路，主要作用是将微弱的电信号(　　)放大成为所需要的较强的电信号。",
+    "options": ["A. 电流或电压", "B. 电压", "C. 电流", "D. 电压、电流"],
+    "answer": "A"
+},
+{
+    "id": 342,
+    "type": "单选题",
+    "question": "稳压管虽然工作在反向击穿区，但只要(　　)不超过允许值，PN结不会过热而损坏。",
+    "options": ["A. 电压", "B. 反向电压", "C. 电流", "D. 反向电流"],
+    "answer": "D"
+},
+{
+    "id": 343,
+    "type": "单选题",
+    "question": "(　　)以电气原理图, 安装接线图和平面布置图最为重要。",
+    "options": ["A. 电工", "B. 操作者", "C. 技术人员", "D. 维修电工"],
+    "answer": "D"
+},
+{
+    "id": 344,
+    "type": "单选题",
+    "question": "读图的基本步骤有：看图样说明，(　　)，看安装接线图。",
+    "options": ["A. 看主电路", "B. 看电路图", "C. 看辅助电路", "D. 看交流电路"],
+    "answer": "B"
+},
+{
+    "id": 345,
+    "type": "单选题",
+    "question": "定子绕组串电阻的降压启动是指电动机启动时，把电阻串接在电动机定子绕组与电源之间，通过电阻的分压作用来(　　)定子绕组上的启动电压。",
+    "options": ["A. 提高", "B. 减少", "C. 加强", "D. 降低"],
+    "answer": "D"
+},
+{
+    "id": 346,
+    "type": "单选题",
+    "question": "Y-D降压启动的指电动机启动时，把定子绕组联结成(　　)，以降低启动电压，限制启动电流。",
+    "options": ["A. D形", "B. Y形", "C. DD形", "D. YY形"],
+    "answer": "B"
+},
+{
+    "id": 347,
+    "type": "单选题",
+    "question": "按钮联锁正反转控制线路的优点是操作方便，缺点是容易产生电源两相短路事故。在实际工作中，经常采用(　　)正反转控制线路。",
+    "options": ["A. 按钮联锁", "B. 接触器联锁", "C. 按钮、接触器联锁", "D. 倒顺开关"],
+    "answer": "C"
+},
+{
+    "id": 348,
+    "type": "单选题",
+    "question": "游标卡尺(　　)应清理干净，并将两量爪合并，检查游标卡尺的精度情况。",
+    "options": ["A. 测量后", "B. 测量时", "C. 测量中", "D. 测量前"],
+    "answer": "D"
+},
+{
+    "id": 349,
+    "type": "单选题",
+    "question": "多量程的电压表是在表内备有可供选择的(　　)阻值倍压器的电压表。",
+    "options": ["A. 一种", "B. 两种", "C. 三种", "D. 多种"],
+    "answer": "D"
+},
+{
+    "id": 350,
+    "type": "单选题",
+    "question": "各种绝缘材料的(　　)的各种指标是抗张，抗压，抗弯，抗剪，抗撕，抗冲击等各种强度指标。",
+    "options": ["A. 接绝缘电阻", "B. 击穿强度", "C. 机械强度", "D. 耐热性"],
+    "answer": "C"
+},
+{
+    "id": 351,
+    "type": "单选题",
+    "question": "当锉刀拉回时，应(　　)，以免磨钝锉齿或划伤工件表面。",
+    "options": ["A. 轻轻划过", "B. 稍微抬起", "C. 抬起", "D. 拖回"],
+    "answer": "B"
+},
+{
+    "id": 352,
+    "type": "单选题",
+    "question": "在开始功螺纹或套螺纹时，要尽量把丝锥或板牙方正，当切入(　　)圈时，再仔细观察和校正对工件的垂直度。",
+    "options": ["A. 0～1", "B. 1～2", "C. 2～3", "D. 3～4"],
+    "answer": "B"
+},
+{
+    "id": 353,
+    "type": "单选题",
+    "question": "人体(　　)是最危险的触电形式。",
+    "options": ["A. 单相触电", "B. 两相触电", "C. 接触电压触电", "D. 跨步电压触电"],
+    "answer": "B"
+},
+{
+    "id": 354,
+    "type": "单选题",
+    "question": "凡工作地点狭窄、工作人员活动困难，周围有大面积接地导体或金属构架，因而存在高度触电危险的环境以及特别的场所，则使用时的安全电压为(　　)。",
+    "options": ["A. 9V", "B. 12V", "C. 24V", "D. 36V"],
+    "answer": "B"
+},
+{
+    "id": 355,
+    "type": "单选题",
+    "question": "高压设备室内不得接近故障点(　　)以内。",
+    "options": ["A. 1米", "B. 2米", "C. 3米", "D. 4米"],
+    "answer": "D"
+},
+{
+    "id": 356,
+    "type": "单选题",
+    "question": "与环境污染相近的概念是(　　)。",
+    "options": ["A. 生态破坏", "B. 电磁幅射污染", "C. 电磁噪音污染", "D. 公害"],
+    "answer": "D"
+},
+{
+    "id": 357,
+    "type": "单选题",
+    "question": "下列电磁污染形式不属于自然的电磁污染的是(　　)。",
+    "options": ["A. 火山爆发", "B. 地震", "C. 雷电", "D. 射频电磁污染"],
+    "answer": "D"
+},
+{
+    "id": 358,
+    "type": "单选题",
+    "question": "收音机发出的交流声属于(　　)。",
+    "options": ["A. 机械噪声", "B. 气体动力噪声", "C. 电磁噪声", "D. 电力噪声"],
+    "answer": "C"
+},
+{
+    "id": 359,
+    "type": "单选题",
+    "question": "下列控制声音传播的措施中(　　)不属于隔声措施。",
+    "options": ["A. 在室内使用双层门", "B. 在室内使用多层门", "C. 采用双层窗", "D. 将多孔海绵板固定在室内"],
+    "answer": "D"
+},
+{
+    "id": 360,
+    "type": "单选题",
+    "question": "对于每个职工来说，质量管理的主要内容有岗位的质量要求、质量目标、质量保证措施和(　　)等。",
+    "options": ["A. 信息反馈", "B. 质量水平", "C. 质量记录", "D. 质量责任"],
+    "answer": "D"
+},
+{
+    "id": 361,
+    "type": "单选题",
+    "question": "岗位的质量要求，通常包括操作程序，(　　)，工艺规程及参数控制等。",
+    "options": ["A. 工作计划", "B. 工作目的", "C. 工作内容", "D. 操作重点"],
+    "answer": "C"
+},
+{
+    "id": 362,
+    "type": "单选题",
+    "question": "劳动者的基本权利包括(　　)等。",
+    "options": ["A. 完成劳动任务", "B. 提高职业技能", "C. 遵守劳动纪律和职业道德", "D. 接受职业技能培训"],
+    "answer": "D"
+},
+{
+    "id": 363,
+    "type": "单选题",
+    "question": "劳动者的基本义务包括(　　)等。",
+    "options": ["A. 执行劳动安全卫生规程", "B. 超额完成工作", "C. 休息", "D. 休假"],
+    "answer": "A"
+},
+{
+    "id": 364,
+    "type": "单选题",
+    "question": "套筒扳手是用来拧紧或旋松有沉孔螺母的工具，由套筒和手柄两部分组成，套筒需配合螺母的(　　)选用。",
+    "options": ["A. 大小", "B. 尺寸", "C. 体积", "D. 规格"],
+    "answer": "D"
+},
+{
+    "id": 365,
+    "type": "单选题",
+    "question": "喷灯使用时操作手动泵增加油筒内的压力，并在点火碗中加入燃料油，点燃烧热喷嘴后，再慢慢打开进油阀门，当(　　)压力达到要求时，即可开始使用。",
+    "options": ["A. 火焰", "B. 燃烧", "C. 火焰喷射", "D. 喷射"],
+    "answer": "C"
+},
+{
+    "id": 366,
+    "type": "单选题",
+    "question": "使用时，首先通入交流电，将探测器放在被测电动机定子铁心的槽口，此时探测器的铁心与被测电动机的定子铁心构成磁回路，组成一只(　　)。",
+    "options": ["A. 接触器", "B. 侦察器", "C. 调压器", "D. 变压器"],
+    "answer": "D"
+},
+{
+    "id": 367,
+    "type": "单选题",
+    "question": "断条侦察器在使用时，若被测转子无断条，相当于变压器二次绕组短路，电流表读数(　　)，否则电流表读数就会减少。",
+    "options": ["A. 较小", "B. 为零", "C. 为无穷大", "D. 较大"],
+    "answer": "D"
+},
+{
+    "id": 368,
+    "type": "单选题",
+    "question": "使用时，不能用千分尺测量(　　)的表面。",
+    "options": ["A. 精度一般", "B. 精度较高", "C. 精度较低", "D. 粗糙"],
+    "answer": "D"
+},
+{
+    "id": 369,
+    "type": "单选题",
+    "question": "CA6140型车床电动机M1短路保护由(　　) QS的电磁脱扣器来实现。",
+    "options": ["A. 组合开关", "B. 低压断路器", "C. 三极控制开关", "D. 三极隔离开关"],
+    "answer": "B"
+},
+{
+    "id": 370,
+    "type": "单选题",
+    "question": "CA6140型车床电动机M2、M3的短路保护由FU1来实现，M1和M2的(　　)是由各自的热继电器来实现的，电动机采用接触器控制。",
+    "options": ["A. 失压保护", "B. 欠压保护", "C. 过载保护", "D. 短路保护"],
+    "answer": "C"
+},
+{
+    "id": 371,
+    "type": "单选题",
+    "question": "CA6140型车床从(　　)考虑，快速进给电动机采用点动控制，按下快速按钮就可以快速进给。",
+    "options": ["A. 安全需要", "B. 生产需要", "C. 生产量", "D. 生产速度"],
+    "answer": "A"
+},
+{
+    "id": 372,
+    "type": "单选题",
+    "question": "当CA6140型车床主电源接通后，由控制变压器6V绕组供电的指示灯HL(　　)，表示车床已接通电源，可以开始工作。",
+    "options": ["A. 灭", "B. 亮", "C. 忽亮忽灭", "D. 都不对"],
+    "answer": "B"
+},
+{
+    "id": 373,
+    "type": "单选题",
+    "question": "Z535型钻床由(　　)对电动机M1和M2进行过载保护。",
+    "options": ["A. 熔断器FU1", "B. 接触器KM1", "C. 热继电器FR1", "D. 接触器KM2"],
+    "answer": "C"
+},
+{
+    "id": 374,
+    "type": "单选题",
+    "question": "5t桥式起重机因为是在断续工作制下，启动频繁，故电动机不使用(　　)，而采用带一定延时的过电流继电器。",
+    "options": ["A. 接触器", "B. 熔断器", "C. 热继电器", "D. 按钮"],
+    "answer": "C"
+},
+{
+    "id": 375,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，用凸轮控制器的12对触头进行控制，其中1对为零位控制起(　　)作用。",
+    "options": ["A. 短路保护", "B. 断路保护", "C. 对地保护", "D. 安全保护"],
+    "answer": "D"
+},
+{
+    "id": 376,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，凸轮控制器的手柄处于(　　)时，所有5对触点都是断开状态，电动机处于最低速的运行状态。",
+    "options": ["A. 第一挡", "B. 第二挡", "C. 第三挡", "D. 第四挡"],
+    "answer": "A"
+},
+{
+    "id": 377,
+    "type": "单选题",
+    "question": "5t桥式起重机线路中，凸轮控制器的手柄扳到(　　)时，一段电阻被短接，串联电动机转子绕组中的电阻值减小，速度上升。",
+    "options": ["A. 第二挡", "B. 第三挡", "C. 第四挡", "D. 第五挡"],
+    "answer": "A"
+},
+{
+    "id": 378,
+    "type": "单选题",
+    "question": "起重机的保护配电柜，柜中电器元件主要有：三相刀闸开关、供电用的主接触器和总电源过电流继电器及各传动电动机保护用的(　　)等。",
+    "options": ["A. 热继电器", "B. 时间继电器", "C. 电压继电器", "D. 过电流继电器"],
+    "answer": "D"
+},
+{
+    "id": 379,
+    "type": "单选题",
+    "question": "在5t桥式起重机线路中，为了安全，除起重机要可靠接地外，还要保证起重机轨道必须接地或重复接地，接地电阻不得大于(　　)。",
+    "options": ["A. 16Ω", "B. 10Ω", "C. 8Ω", "D. 4Ω"],
+    "answer": "D"
+},
+{
+    "id": 380,
+    "type": "单选题",
+    "question": "常见维修电工图的种类有：系统图和框图，电路图，(　　)。",
+    "options": ["A. 成套设备配线简图", "B. 设备简图", "C. 装置的内部连接简图", "D. 接线图"],
+    "answer": "D"
+},
+{
+    "id": 381,
+    "type": "单选题",
+    "question": "接线图以粗实线画主回路，以细实线画(　　)。",
+    "options": ["A. 主回路", "B. 控制回路", "C. 照明回路", "D. 辅助回路"],
+    "answer": "B"
+},
+{
+    "id": 382,
+    "type": "单选题",
+    "question": "识图的基本步骤：看图样说明，看电气原理图，看(　　)。",
+    "options": ["A. 主回路接线图", "B. 辅助回路接线图", "C. 回路标号", "D. 安装线路图"],
+    "answer": "D"
+},
+{
+    "id": 383,
+    "type": "单选题",
+    "question": "用绝缘带包缠导线恢复绝缘时，要注意(　　)，更不允许露出芯线，以免发生触电或短路事故。",
+    "options": ["A. 不能过密", "B. 不能重叠", "C. 不能过疏", "D. 均匀"],
+    "answer": "A"
+},
+{
+    "id": 384,
+    "type": "单选题",
+    "question": "电缆线路故障的原因有：机械损伤、护层腐蚀、(　　)、过热。",
+    "options": ["A. 雷击", "B. 过电流", "C. 过电压", "D. 过电容"],
+    "answer": "A"
+},
+{
+    "id": 385,
+    "type": "单选题",
+    "question": "用(　　)寻找断线、相间低电阻短路故障很方便。",
+    "options": ["A. 感应法", "B. 声测法", "C. 兆欧表", "D. 电桥"],
+    "answer": "A"
+},
+{
+    "id": 386,
+    "type": "单选题",
+    "question": "长期运行的母线槽至少每年定期维修检查(　　)。",
+    "options": ["A. 五次", "B. 三次", "C. 两次", "D. 一次"],
+    "answer": "D"
+},
+{
+    "id": 387,
+    "type": "单选题",
+    "question": "工作接地的接地电阻每隔半年或一年检查(　　)。",
+    "options": ["A. 四次", "B. 三次", "C. 两次", "D. 一次"],
+    "answer": "D"
+},
+{
+    "id": 388,
+    "type": "单选题",
+    "question": "拆除风扇罩及风扇叶轮时，将固定风扇罩的螺钉拧下来，用木锤在与轴(　　)的方向从不同的位置上向外敲打风扇罩。",
+    "options": ["A. 垂直", "B. 平行", "C. 倾斜", "D. 偏移"],
+    "answer": "A"
+},
+{
+    "id": 389,
+    "type": "单选题",
+    "question": "电动机装轴承时，用煤油将轴承及轴承盖清洗干净，检查轴承有无裂纹、是否灵活、(　　)，如有问题则需更换。",
+    "options": ["A. 间隙是否过小", "B. 是否无间隙", "C. 间隙是否过大", "D. 变化很大"],
+    "answer": "C"
+},
+{
+    "id": 390,
+    "type": "单选题",
+    "question": "安装转子时，转子对准定子中心，沿着定子圆周的中心线将缓缓地向定子里送进，送进过程中(　　)定子绕组。",
+    "options": ["A. 不得接触", "B. 互相碰擦", "C. 远离", "D. 不得碰擦"],
+    "answer": "D"
+},
+{
+    "id": 391,
+    "type": "单选题",
+    "question": "对于低压电动机，如果测得绝缘电阻(　　)0.5MΩ，应及时修理。",
+    "options": ["A. 大于", "B. 等于", "C. 小于", "D. 大于等于"],
+    "answer": "C"
+},
+{
+    "id": 392,
+    "type": "单选题",
+    "question": "三相异步电动机的常见故障有：电动机过热、电动机振动、(　__)。",
+    "options": ["A. 将三角形连接误接为星形连接", "B. 笼条断裂", "C. 绕组头尾接反", "D. 电动机启动后转速低或转矩小"],
+    "answer": "D"
+},
+{
+    "id": 393,
+    "type": "单选题",
+    "question": "进行集电环修理时，如果集电环表面的烧伤、凹凸沟槽深度达1mm左右，损伤面积达20%～30%时，应上(　__)进行车削。",
+    "options": ["A. 砂轮", "B. 磨床", "C. 铣床", "D. 车床"],
+    "answer": "D"
+},
+{
+    "id": 394,
+    "type": "单选题",
+    "question": "用兆欧表逐相测量定子绕组与外壳的(　__)，当转动摇柄时，指针指到零，说明绕组接地。",
+    "options": ["A. 电压", "B. 绝缘电阻", "C. 电流", "D. 电容"],
+    "answer": "B"
+},
+{
+    "id": 395,
+    "type": "单选题",
+    "question": "三相异步电动机定子绕组用短路探测器检查短路点，若检查的线圈有短路，则串在探测器回路的电流表读数(　__)。",
+    "options": ["A. 就小", "B. 不变", "C. 等于零", "D. 就大"],
+    "answer": "D"
+},
+{
+    "id": 396,
+    "type": "单选题",
+    "question": "三相异步电动机定子绕组用电压降压法检修时，为查出某一相短路故障，先在另一相加入(　__)，在另外两相测感应电压，有短路的那相的感应电压偏小。",
+    "options": ["A. 高压交流电", "B. 低压交流电", "C. 高压电流", "D. 低压电流"],
+    "answer": "B"
+},
+{
+    "id": 397,
+    "type": "单选题",
+    "question": "测定电动机绕线组冷态直流电阻时，大于1Ω可用(　__)。",
+    "options": ["A. 双臂电桥", "B. 单臂电桥", "C. 摇表", "D. 接地摇表"],
+    "answer": "A"
+},
+{
+    "id": 398,
+    "type": "单选题",
+    "question": "电动机绝缘电阻的测量，对500V以上的电动机，应采用(　__)的兆欧表。",
+    "options": ["A. 380V", "B. 500V", "C. 1000V", "D. 1000V或2500V"],
+    "answer": "D"
+},
+{
+    "id": 399,
+    "type": "单选题",
+    "question": "电动机绝缘电阻的测量，对于常用的低压电动机，3～6kV的高压电阻不得低于(　__)。",
+    "options": ["A. 2MΩ", "B. 5MΩ", "C. 10MΩ", "D. 20MΩ"],
+    "answer": "D"
+},
+{
+    "id": 400,
+    "type": "单选题",
+    "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是(　__)修理时，试验电压可低些，低压电机的实验电压为额定电压再加上500V。",
+    "options": ["A. 局部", "B. 整个", "C. 大部分", "D. 少部分"],
+    "answer": "A"
+},
+{
+    "id": 401,
+    "type": "单选题",
+    "question": "进行三相异步电动机对地绝缘耐压试验时，当线圈是局部修理时，对于380V以下的电机，若无高压实验设备，可用1000V的兆欧表作为实验电源，摇测(　__)。",
+    "options": ["A. 1min", "B. 2min", "C. 3min", "D. 4min"],
+    "answer": "A"
+},
+{
+    "id": 402,
+    "type": "单选题",
+    "question": "小型变压器的修理，接通电源无电压输出时，若一次回路有较小的电流，而二次回路(　__)，则一般是二次绕组的出线端头断裂。",
+    "options": ["A. 有电压无电流", "B. 无电压有电流", "C. 有较大电流", "D. 既无电压也无电流"],
+    "answer": "D"
+},
+{
+    "id": 403,
+    "type": "单选题",
+    "question": "小型变压器线圈的绝缘处理，将线圈放在电烘箱内加温到70～80℃，保温6h，然后立即侵入绝缘清漆中约0.5h，取出后放在通风处阴干，再放进烘箱加温到80℃，烘(　__)即可。",
+    "options": ["A. 9h", "B. 10h", "C. 11h", "D. 12h"],
+    "answer": "D"
+},
+{
+    "id": 404,
+    "type": "单选题",
+    "question": "小型变压器绝缘电阻测试，用兆欧表测量各绕组之间和它们对铁心的绝缘电阻，其值不应低于(　__)。",
+    "options": ["A. 20MΩ", "B. 10MΩ", "C. 5MΩ", "D. 1MΩ"],
+    "answer": "D"
+},
+{
+    "id": 405,
+    "type": "单选题",
+    "question": "小型变压器空载电压的测试，一次侧加上(　__)，测量二次侧空载电压的允许误差应小于±10%。",
+    "options": ["A. 额定电压", "B. 额定电流", "C. 交流电压", "D. 直流电压"],
+    "answer": "A"
+},
+{
+    "id": 406,
+    "type": "单选题",
+    "question": "接触器触点的整形修理时，当电流过大、灭弧装置失效、触点(　__)或因触点弹簧损坏，初压力过小时，触点闭合或断开电路时会产生电弧。",
+    "options": ["A. 容量过大", "B. 容量过小", "C. 容量不大", "D. 容量为零"],
+    "answer": "B"
+},
+{
+    "id": 407,
+    "type": "单选题",
+    "question": "接触器触点的超程是指触点(　__)后，动触点发生的位移。",
+    "options": ["A. 分开一半", "B. 闭合一半", "C. 完全分开", "D. 完全闭合"],
+    "answer": "D"
+},
+{
+    "id": 408,
+    "type": "单选题",
+    "question": "测量接触器桥式触点终压力，测量时要注意拉力方向应(　__)触点接触线方向。",
+    "options": ["A. 平行于", "B. 对准于", "C. 相交于", "D. 垂直于"],
+    "answer": "D"
+},
+{
+    "id": 409,
+    "type": "单选题",
+    "question": "电磁式继电器检测与要求，对于一般桥式触点，吸合时的超额行程不小于(　__)。",
+    "options": ["A. 4.5mm", "B. 3.5mm", "C. 2.5mm", "D. 1.5mm"],
+    "answer": "D"
+},
+{
+    "id": 410,
+    "type": "单选题",
+    "question": "过电流继电器动作值的整定，对于直流继电器应按电动机最大工作冲击(　__)的110%～115%进行整定。",
+    "options": ["A. 电阻", "B. 电压", "C. 电流", "D. 电容"],
+    "answer": "C"
+},
+{
+    "id": 411,
+    "type": "单选题",
+    "question": "检修CA6140型车床时，按停止按钮，主轴不停转的原因是(　__)。",
+    "options": ["A. 接触器主触点因熔焊而粘死", "B. 接触器内部有机械卡死现象", "C. 按钮常闭触头不能断开", "D. 以上都正确"],
+    "answer": "D"
+},
+{
+    "id": 412,
+    "type": "单选题",
+    "question": "接地系统中，人工接地体不应放在车间内，最好离开车间门及人行道5m，不得(　__)2.5m。",
+    "options": ["A. 大于", "B. 等于", "C. 小于", "D. 小于等于"],
+    "answer": "C"
+},
+{
+    "id": 413,
+    "type": "单选题",
+    "question": "频敏变阻器的特点是它的电阻值随转速的(　__)而自动平滑地减小，使电动机能够平稳地启动，但其功率因数较低。",
+    "options": ["A. 下降", "B. 上升", "C. 减少", "D. 增加"],
+    "answer": "B"
+},
+{
+    "id": 414,
+    "type": "单选题",
+    "question": "三相异步电动机在转子电路串接电阻时，转子回路串接不同阻值的电阻，阻值(　__)，特性越软，在一定转矩时转速也就越低。",
+    "options": ["A. 越小", "B. 越大", "C. 不变", "D. 为零"],
+    "answer": "B"
+},
+{
+    "id": 415,
+    "type": "单选题",
+    "question": "由于变压器一次、二次绕组有电阻和漏感，负载电流通过这些漏阻抗产生内部(　__)，其二次侧端电压随负载的变化而变化。",
+    "options": ["A. 电流降", "B. 电阻降", "C. 电压降", "D. 电容降"],
+    "answer": "C"
+},
+{
+    "id": 416,
+    "type": "单选题",
+    "question": "配电板可用2.5—3mm钢板制作，上面覆盖一张(　__)左右的布质酚醛层压板。",
+    "options": ["A. 1mm", "B. 2mm", "C. 3mm", "D. 4mm"],
+    "answer": "A"
+},
+{
+    "id": 417,
+    "type": "单选题",
+    "question": "配电板的尺寸要小于配电柜门框的尺寸，还要考虑到电器元件(　__)配电板能自由进出柜门。",
+    "options": ["A. 拆卸后", "B. 固定后", "C. 拆装后", "D. 安装后"],
+    "answer": "D"
+},
+{
+    "id": 418,
+    "type": "单选题",
+    "question": "备齐所有的元器件，将元器件进行模拟排列，元器件(　__)要合理。",
+    "options": ["A. 走向", "B. 码放", "C. 布局", "D. 安装位置"],
+    "answer": "C"
+},
+{
+    "id": 419,
+    "type": "单选题",
+    "question": "用划针在底板上画出(　__)的装配孔位置，然后拿开所有的元器件。",
+    "options": ["A. 熔断器", "B. 接触器", "C. 元器件", "D. 按钮"],
+    "answer": "C"
+},
+{
+    "id": 420,
+    "type": "单选题",
+    "question": "安装接触器时，要求散热孔(　__)。",
+    "options": ["A. 朝右", "B. 朝左", "C. 朝下", "D. 朝上"],
+    "answer": "D"
+},
+{
+    "id": 421,
+    "type": "单选题",
+    "question": "主回路的连接线一般采用较粗的(　　)单股塑料铜芯线。",
+    "options": ["A. 0.75mm²", "B. 1mm²", "C. 1.5mm²", "D. 2.5mm²"],
+    "answer": "D"
+},
+{
+    "id": 422,
+    "type": "单选题",
+    "question": "(　　)一般采用1mm²的单股塑料铜芯线。",
+    "options": ["A. 控制回路", "B. 主回路", "C. 电路图", "D. 图样"],
+    "answer": "A"
+},
+{
+    "id": 423,
+    "type": "单选题",
+    "question": "检查主回路和控制回路的(　　)是否合理、正确，所有(　__)螺钉是否拧紧、牢固。",
+    "options": ["A. 布线，接线", "B. 布线，导线", "C. 接线，布线", "D. 导线，布线"],
+    "answer": "A"
+},
+{
+    "id": 424,
+    "type": "单选题",
+    "question": "专用继电器是一种根据电量或非电量的变化，接通或断开小电流(　__)。",
+    "options": ["A. 主电路", "B. 主电路和控制电路", "C. 辅助电路", "D. 控制电路"],
+    "answer": "D"
+},
+{
+    "id": 425,
+    "type": "单选题",
+    "question": "速度继电器是反映转速和转向的继电器，其主要作用是以(　__)的快慢为指令信号。",
+    "options": ["A. 转子转动", "B. 定子偏转", "C. 速度", "D. 旋转速度"],
+    "answer": "D"
+},
+{
+    "id": 426,
+    "type": "单选题",
+    "question": "在速度继电器的型号及含义中，以JFZO为例，其中O代表(　__)。",
+    "options": ["A. 规格序号", "B. 触头数", "C. 转速等级", "D. 设计序号"],
+    "answer": "C"
+},
+{
+    "id": 427,
+    "type": "单选题",
+    "question": "JY1型速度继电器触头额定电压380V，触头额定电流2A，额定工作转速100—3000r/min，允许操作频率(　__)30次/h。",
+    "options": ["A. 大于等于", "B. 大于", "C. 小于", "D. 小于等于"],
+    "answer": "D"
+},
+{
+    "id": 428,
+    "type": "单选题",
+    "question": "速度继电器的弹性动触片调整的规律为，将调整螺钉(　__)，弹性动触片弹性减小，速度较低时继电器即动作。",
+    "options": ["A. 向下旋", "B. 向上旋", "C. 向左旋", "D. 向右旋"],
+    "answer": "B"
+},
+{
+    "id": 429,
+    "type": "单选题",
+    "question": "热敏电阻式温度继电器应用较广，它的外形同一般晶体管式时间继电器(　__)。",
+    "options": ["A. 不一样", "B. 一样", "C. 差别很大", "D. 相似"],
+    "answer": "D"
+},
+{
+    "id": 430,
+    "type": "单选题",
+    "question": "热敏电阻式温度继电器当温度在65℃以下时，热敏电阻为(　__)，电桥处于平衡状态，执行继电器不动作。",
+    "options": ["A. 不恒定值", "B. 恒定值", "C. 变化很大", "D. 零"],
+    "answer": "B"
+},
+{
+    "id": 431,
+    "type": "单选题",
+    "question": "压力继电器经常用于机械设备的(　__)控制系统中，它能根据压力源压力的变化情况决定触点的断开或闭合，以便对机械设备提供保护或控制。",
+    "options": ["A. 油压", "B. 油压、水压或气压", "C. 水压", "D. 气压"],
+    "answer": "B"
+},
+{
+    "id": 432,
+    "type": "单选题",
+    "question": "压力继电器的微动开关和顶杆的距离一般大于(　__)。",
+    "options": ["A. 0.1mm", "B. 0.2mm", "C. 0.4mm", "D. 0.6mm"],
+    "answer": "A"
+},
+{
+    "id": 433,
+    "type": "单选题",
+    "question": "YJ系列的压力继电器技术数据中，额定电压为交流380V，长期工作电流为(　__)。",
+    "options": ["A. 1A", "B. 3A", "C. 5A", "D. 10A"],
+    "answer": "C"
+},
+{
+    "id": 434,
+    "type": "单选题",
+    "question": "晶体管时间继电器也称(　__)时间继电器，是自动控制系统中的重要元件。",
+    "options": ["A. 导体", "B. 半导体", "C. 气囊式", "D. 电子式"],
+    "answer": "B"
+},
+{
+    "id": 435,
+    "type": "单选题",
+    "question": "控制回路相互协调需(　__)时，选用晶体管时间继电器。",
+    "options": ["A. 有触点输出", "B. 有触点输入", "C. 无触点输出", "D. 无触点输入"],
+    "answer": "C"
+},
+{
+    "id": 436,
+    "type": "单选题",
+    "question": "行程开关应根据控制回路的额定电压和(　__)选择开关系列。",
+    "options": ["A. 交流电流", "B. 直流电流", "C. 交、直流电流", "D. 电流"],
+    "answer": "D"
+},
+{
+    "id": 437,
+    "type": "单选题",
+    "question": "(　__)导线的连接剥去适当长度的绝缘层，用钳子把各导线逐根拉直，再将导线顺次散开成30°伞状。",
+    "options": ["A. 多股铜", "B. 多股铝", "C. 七股铜", "D. 七股铝"],
+    "answer": "A"
+},
+{
+    "id": 438,
+    "type": "单选题",
+    "question": "(　__)的铜芯导线接头，可采用浇焊法。",
+    "options": ["A. 16mm以下", "B. 16mm以上", "C. 25mm以下", "D. 25mm以上"],
+    "answer": "B"
+},
+{
+    "id": 439,
+    "type": "单选题",
+    "question": "导线恢复绝缘，在包缠时不能过疏，不能露出芯线，以免发生(　__)事故。",
+    "options": ["A. 触电", "B. 断路", "C. 短路", "D. 触电或断路"],
+    "answer": "C"
+},
+{
+    "id": 440,
+    "type": "单选题",
+    "question": "直径19mm以下电线管的线管配线时，穿管导线的总面积不得超过线管内径截面积的40%。线管的(　__)可根据有关表格来选择。",
+    "options": ["A. 面积", "B. 半径", "C. 管径", "D. 直径"],
+    "answer": "C"
+},
+{
+    "id": 441,
+    "type": "单选题",
+    "question": "线路暗管敷设时，管子的曲率半径：R≥6d，弯曲角度：(　__)。",
+    "options": ["A. θ≥30°", "B. θ≥45°", "C. θ≥60°", "D. θ≥90°"],
+    "answer": "D"
+},
+{
+    "id": 442,
+    "type": "单选题",
+    "question": "钢管与钢管、配电箱及接线盒等处的配线，用直径为6-10mm圆钢制成的跨接线连接时，所有线管上的金属元件都可靠(　__)。",
+    "options": ["A. 重复接地", "B. 工作接地", "C. 接零", "D. 接地"],
+    "answer": "D"
+},
+{
+    "id": 443,
+    "type": "单选题",
+    "question": "管内配线时，管内导线一般不允许超过10根，(　__)线管内不允许穿不同电压或不同电度表的导线。",
+    "options": ["A. 不同根", "B. 同一根", "C. 两根", "D. 三根"],
+    "answer": "B"
+},
+{
+    "id": 444,
+    "type": "单选题",
+    "question": "管线配线时，导线的绝缘强度不低于500V，导线最小截面铜芯线为1mm²，铝芯线为(　__)。",
+    "options": ["A. 1mm²", "B. 1.5mm²", "C. 2.5mm²", "D. 4mm²"],
+    "answer": "C"
+},
+{
+    "id": 445,
+    "type": "单选题",
+    "question": "控制箱内外所有电气设备和电气元件的编号，必须与(　__)上的编号完全一致。",
+    "options": ["A. 电气原理图", "B. 实际接线图", "C. 元件布置图", "D. 线路接线图"],
+    "answer": "A"
+},
+{
+    "id": 446,
+    "type": "单选题",
+    "question": "为了防止虚焊，(　__)的引线均应预先镀锡。",
+    "options": ["A. 重要元件", "B. 次要元件", "C. 一般元件", "D. 所有元件"],
+    "answer": "D"
+},
+{
+    "id": 447,
+    "type": "单选题",
+    "question": "焊点距管壳不小于10mm，电烙铁功率一般不大于45W，焊接时间不超过(　__)。",
+    "options": ["A. 5s", "B. 6s", "C. 7s", "D. 8s"],
+    "answer": "A"
+},
+{
+    "id": 448,
+    "type": "单选题",
+    "question": "晶体管工作在(　__)状态时，发射结正偏，对于硅管约为0.7V，锗管约为0.3V。",
+    "options": ["A. 放大", "B. 截止", "C. 饱和", "D. 失真"],
+    "answer": "A"
+},
+{
+    "id": 449,
+    "type": "单选题",
+    "question": "单管电压放大电路的动态分析时的交流通路，由于耦合电容C1、C2对交流的容抗很小，可把C1、C2看成是短路，直流电源Ucc的内阻很小，所以可把Ucc看成是(　__)。",
+    "options": ["A. 断路", "B. 开路", "C. 接通", "D. 短路"],
+    "answer": "D"
+},
+{
+    "id": 450,
+    "type": "单选题",
+    "question": "把放大电路的输出信号电压或电流的(　__)通过反馈电路，送回到输入端的过程叫反馈。",
+    "options": ["A. 一部分", "B. 一部分或全部", "C. 全部", "D. 少部分"],
+    "answer": "B"
+},
+{
+    "id": 451,
+    "type": "单选题",
+    "question": "若反馈到输入端的是直流量，则称为直流负反馈，它能稳定(　　)。",
+    "options": ["A. 直流负载线", "B. 基极偏置电流", "C. 集电极电压", "D. 静态工作点"],
+    "answer": "D"
+},
+{
+    "id": 452,
+    "type": "单选题",
+    "question": "振荡电路产生自激振荡的振幅条件是：反馈到放大器输入端的电压幅值必须等于或大于放大器的原输入(　__)幅值。",
+    "options": ["A. 电流", "B. 电阻", "C. 电容", "D. 电压"],
+    "answer": "D"
+},
+{
+    "id": 453,
+    "type": "单选题",
+    "question": "变压器耦合式振荡器电路，当振荡电路接通电源瞬间，在集电极电路中激起一个微小的(　__)变化。",
+    "options": ["A. 电容", "B. 电阻", "C. 电压", "D. 电流"],
+    "answer": "D"
+},
+{
+    "id": 454,
+    "type": "单选题",
+    "question": "静态工作点稳定的放大回路中，当温度升高时，集电极静态(　__)，造成静态工作点上移，靠近饱和区，容易引起饱和失真。",
+    "options": ["A. 电流降低", "B. 电压降低", "C. 电流增大", "D. 电压增大"],
+    "answer": "C"
+},
+{
+    "id": 455,
+    "type": "单选题",
+    "question": "整流电路是利用二极管的单向导电性，将交流电压变换成单方向的脉动(　__)。",
+    "options": ["A. 交流电流", "B. 交流电压", "C. 直流电流", "D. 直流电压"],
+    "answer": "D"
+},
+{
+    "id": 456,
+    "type": "单选题",
+    "question": "对于电动机不经常启动而且启动时间不长的电路，熔体额定电流约等于电动机额定电流的(　__)倍。",
+    "options": ["A. 0.5", "B. 1", "C. 1.5", "D. 2.5"],
+    "answer": "C"
+},
+{
+    "id": 457,
+    "type": "单选题",
+    "question": "多台交流电动机线路总熔体的额定电流，约等于线路上功率最大一台电动机电流的1.5-2.5倍，再加上其他电动机(　__)的总和。",
+    "options": ["A. 电压", "B. 电流", "C. 额定电压", "D. 额定电流"],
+    "answer": "D"
+},
+{
+    "id": 458,
+    "type": "单选题",
+    "question": "刀开关的额定电压应等于或大于电路额定电压，其额定电流应(　__)电路的工作电流。",
+    "options": ["A. 稍小于", "B. 稍大于", "C. 等于或稍小于", "D. 等于或稍大于"],
+    "answer": "D"
+},
+{
+    "id": 459,
+    "type": "单选题",
+    "question": "低压断路器的电磁脱扣器的瞬时脱扣整定电流(　__)负载电路正常工作时的峰值电流。",
+    "options": ["A. 小于等于", "B. 大于等于", "C. 小于", "D. 大于"],
+    "answer": "B"
+},
+{
+    "id": 460,
+    "type": "单选题",
+    "question": "CA6140型车床的(　__)前准备时，应将有关的图样和安装、使用、维修、调试说明准备好。",
+    "options": ["A. 运行", "B. 调试", "C. 检修", "D. 检测"],
+    "answer": "B"
+},
+{
+    "id": 461,
+    "type": "单选题",
+    "question": "CA6140型车床的调试前准备时，应将电工工具、兆欧表、万用表和(　__)准备好。",
+    "options": ["A. 电压表", "B. 电流表", "C. 转速表", "D. 钳形电流表"],
+    "answer": "D"
+},
+{
+    "id": 462,
+    "type": "单选题",
+    "question": "CA6140型车床的调试前准备时，测量电动机M1、M2、M3绕组间、对地绝缘(　__)是否大于0.5兆欧。",
+    "options": ["A. 电流", "B. 电阻", "C. 电压", "D. 交流电压"],
+    "answer": "B"
+},
+{
+    "id": 463,
+    "type": "单选题",
+    "question": "CA6140型车床的调试时，控制回路试车时，先接通低压断路器QS，检查熔断器FU1前后有无(　__)电压。",
+    "options": ["A. 1000V", "B. 500V", "C. 380V", "D. 127V"],
+    "answer": "C"
+},
+{
+    "id": 464,
+    "type": "单选题",
+    "question": "CA6140型车床的调试时，控制回路试车时，检查控制变压器一次侧为380V、二次侧为(　__)、6V、110V。",
+    "options": ["A. 127V", "B. 36V", "C. 24V", "D. 48V"],
+    "answer": "A"
+},
+{
+    "id": 465,
+    "type": "单选题",
+    "question": "CA6140型车床主回路加电试车时，经过一段时间试运行，观察、检查电动机有无异常响声、异味、冒烟、振动和(　__)等异常现象。",
+    "options": ["A. 温升过低", "B. 温升过高", "C. 温升不高于", "D. 温升不低于"],
+    "answer": "B"
+},
+{
+    "id": 466,
+    "type": "单选题",
+    "question": "Z535钻床调试前的准备时，将电工工具、兆欧表、(　__)和钳形电流表准备好。",
+    "options": ["A. 电流表", "B. 万用表", "C. 电压表", "D. 转速表"],
+    "answer": "B"
+},
+{
+    "id": 467,
+    "type": "单选题",
+    "question": "Z535钻床调试前的准备时，测量电动机M1、M2各绕组间和对地的绝缘电阻是否(　__)0.5兆欧。",
+    "options": ["A. 小于", "B. 大于", "C. 等于", "D. 大于等于"],
+    "answer": "B"
+},
+{
+    "id": 468,
+    "type": "单选题",
+    "question": "Z535钻床调试前的准备时，测量线路对地电阻是否(　__)3兆欧。",
+    "options": ["A. 大于", "B. 小于", "C. 等于", "D. 大于等于"],
+    "answer": "A"
+},
+{
+    "id": 469,
+    "type": "单选题",
+    "question": "Z535钻床调试前的准备时，检查电动机是否转动灵活，轴承有无(　__)等异常现象。",
+    "options": ["A. 漏油", "B. 缺油", "C. 少油", "D. 渗油"],
+    "answer": "B"
+},
+{
+    "id": 470,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量FU1进线处应有三相(　__)V交流电压。",
+    "options": ["A. 500", "B. 380", "C. 127", "D. 36"],
+    "answer": "B"
+},
+{
+    "id": 471,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器一次侧有380V、220V(　__)。",
+    "options": ["A. 电阻", "B. 交流电压", "C. 电流", "D. 直流电压"],
+    "answer": "B"
+},
+{
+    "id": 472,
+    "type": "单选题",
+    "question": "Z535钻床控制回路试车时，将QS1接通，用万用表测量变压器二次侧有(　__)交流电压。",
+    "options": ["A. 127V", "B. 24V", "C. 36V", "D. 12V"],
+    "answer": "A"
+},
+{
+    "id": 473,
+    "type": "单选题",
+    "question": "Z535钻床控制主回路试车时，再停电状态下，调整(　__)。",
+    "options": ["A. 接触器", "B. 热继电器", "C. 组合开关", "D. 按钮"],
+    "answer": "B"
+},
+{
+    "id": 474,
+    "type": "单选题",
+    "question": "Z535钻床控制主回路试车时，再停电状态下，调整热继电器，使其动作电流为主轴电动机额定电流的(　__)倍左右。",
+    "options": ["A. 1.5", "B. 1.2", "C. 3", "D. 4"],
+    "answer": "A"
+},
+{
+    "id": 475,
+    "type": "单选题",
+    "question": "用兆欧表对电路进行测试，检查元器件及导线绝缘是否良好，相间或相线与底板之间有无(　__)现象。",
+    "options": ["A. 断路", "B. 对地", "C. 接通", "D. 短路"],
+    "answer": "D"
+},
+{
+    "id": 476,
+    "type": "单选题",
+    "question": "电动机启动后，注意(　__)电动机有无异常声音及转向是否正确。",
+    "options": ["A. 听", "B. 听和观察", "C. 观察", "D. 测试"],
+    "answer": "B"
+},
+{
+    "id": 477,
+    "type": "单选题",
+    "question": "启动电动机前，应用钳形电流表卡住电动机三根引线的其中一根，测量电动机的(　__)。",
+    "options": ["A. 运行电流", "B. 启动电阻", "C. 启动电流", "D. 启动电流"],
+    "answer": "C"
+},
+{
+    "id": 478,
+    "type": "单选题",
+    "question": "电动机的启动电流一般是额定电流的(　__)倍。",
+    "options": ["A. 4-6", "B. 3-6", "C. 4-7", "D. 5-7"],
+    "answer": "A"
+},
+{
+    "id": 479,
+    "type": "单选题",
+    "question": "电动机正常运行后，测量电动机三相电流应平衡，空载和有负载时(　__)是否超过额定值。",
+    "options": ["A. 电压", "B. 电阻", "C. 电流", "D. 电容"],
+    "answer": "C"
+},
+{
+    "id": 480,
+    "type": "单选题",
+    "question": "电动机三相电流正常，使电动机运行(　__)，运行中经常测试电动机的外壳温度，检查长时间运行中的温升是否太高或太快。",
+    "options": ["A. 50min", "B. 40min", "C. 30min", "D. 20min"],
+    "answer": "C"
+},
+{
+    id:481,
+    type: '判断题',
+    question: '事业成功的人往往具有较高的职业道德。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 482,
+    type: '判断题',
+    question: '职业纪律中包括群众纪律。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 483,
+    type: '判断题',
+    question: '在电源内部由正极指向负极，即从低电位指向高电位。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 484,
+    type: '判断题',
+    question: '几个相同大小的电阻的一端连在电路中的一点，另一端也同时连在另一点，使每个电阻两端都承受相同的电压，这种联结方式叫电阻的并联。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 485,
+    type: '判断题',
+    question: '电流流过负载时，负载将电能转换成热能。电能转换成热能的过程，叫做电流做的功，简称电功。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 486,
+    type: '判断题',
+    question: '电解电容有正，负极，使用时负极接高电位，正极接低电位。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 487,
+    type: '判断题',
+    question: '用左手握住通电导体，让拇指指向电流方向，则弯曲四指的指向就是磁场方向。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 488,
+    type: '判断题',
+    question: '规定电流的参考方向由首端流进，从末端流出。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 489,
+    type: '判断题',
+    question: '二极管具有单向导电性，是线性元件。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 490,
+    type: '判断题',
+    question: 'CW7805的U0=5V，它的最大输出电流为1.5V。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 491,
+    type: '判断题',
+    question: 'Y-D降压启动的指电动机启动时，把定子绕组联结成Y形，以降低启动电压，限制启动电流。待电动机启动后，再把定子绕组改成D形，使电动机全压运行。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 492,
+    type: '判断题',
+    question: '钻夹头用来装夹直径12mm以下的钻头。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 493,
+    type: '判断题',
+    question: '触电的形式是多种多样的，但除了因电弧灼伤及熔融的金属飞溅灼伤外，可大致归纳为三种形式。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 494,
+    type: '判断题',
+    question: '为了防止发生人身触电事故和设备短路或接地故障，带电体之间、带电体与地面之间、带电体与其他设施之间、工作人员与带电体之间必须保持的最小空气间隙，称为安全距离。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 495,
+    type: '判断题',
+    question: '生态破坏是指由于环境污染和破坏，对多数人的健康、生命、财产造成的公共性危害。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 496,
+    type: '判断题',
+    question: '影响人类生活环境的电磁污染源，可分为自然的和人为的两大类。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 497,
+    type: '判断题',
+    question: '用耳塞、耳罩、耳棉等个人防护用品来防止噪音的干扰，在所有场合都是有效的。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 498,
+    type: '判断题',
+    question: '对于每个职工来说，质量管理的主要内容有岗位的质量要求，质量目标，质量保证措施和质量责任等。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 499,
+    type: '判断题',
+    question: '劳动者的基本义务中应包括遵守职业道德。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 500,
+    type: '判断题',
+    question: '劳动者患病或负伤，在规定的医疗期内的，用人单位可以解除劳动合同。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 501,
+    type: '判断题',
+    question: '套筒扳手是用来拧紧或旋松有沉孔螺母的工具，由套筒和手柄两部分组成。套筒需配合螺母的规格选用。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 502,
+    type: '判断题',
+    question: '加注燃料油时，首先旋开加油螺塞，注入燃料油，油量要低于油筒最大容量的3/4，然后旋紧加油螺塞。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 503,
+    type: '判断题',
+    question: '喷灯使用时操作手动泵减少油筒内的压力，并在点火碗中加入燃料油，点燃烧热喷嘴后，再慢慢打开进油阀门，当火焰喷射压力达到要求时，即可开始使用。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 504,
+    type: '判断题',
+    question: '喷灯使用完毕，应将剩余的燃料油烧净，将喷灯污物擦除后，妥善保管。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 505,
+    type: '判断题',
+    question: '短路探测器是一种开口的变压器。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 506,
+    type: '判断题',
+    question: '断条侦察器在使用时，若被测转子无断条，相当于变压器一次绕组短路，电流表读数就大，否则电流表读数就会减少。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 507,
+    type: '判断题',
+    question: 'CA6140型车床电动机M1短路保护由低压断路器QS的热脱扣器来实现。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 508,
+    type: '判断题',
+    question: '接线图以粗实线画主回路，以点划线线画辅助回路。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 509,
+    type: '判断题',
+    question: '电缆线路故障的原因有：机械损伤、保护层损坏、过电压、过热。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 510,
+    type: '判断题',
+    question: '测定电动机绕线组冷态直流电阻时，小于1Ω必须用单臂电桥。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 511,
+    type: '判断题',
+    question: '电动机绝缘电阻的测量，对于常用的低压电动机，常温下绝缘电阻不得低于5MΩ。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 512,
+    type: '判断题',
+    question: '小型变压器空载电压的测试，一次侧加上额定电压，测量二次侧空载电压的允许误差应大于±10%。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 513,
+    type: '判断题',
+    question: '接地系统中，人工接地体不应放在车间内，最好离开车间门及人行道5m，不得大于2.5m。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 514,
+    type: '判断题',
+    question: 'YJ-O系列的压力继电器技术数据中，最大控制压力为6.0795102√a，最小控制压力为2.0265102√a。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 515,
+    type: '判断题',
+    question: '行程开关应根据主回路的额定电压和电流选择开关系列。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 516,
+    type: '判断题',
+    question: '单管电压放大电路的动态分析时的交流通路，由于耦合电容C1、C2对交流的容抗很大，可把C1、C2看成是短路，直流电源Ucc的内阻很小，所以可把Ucc看成是短路。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 517,
+    type: '判断题',
+    question: 'CA6140型车床的调试时，控制回路试车时，先接通低压断路器QS，检查熔断器FU1前后有无380V电压。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 518,
+    type: '判断题',
+    question: 'Z535钻床调试前的准备时，将电工工具、兆欧表、万用表和转速表准备好。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 519,
+    type: '判断题',
+    question: 'Z535钻床调试前的准备时，检查电动机是否转动灵活，轴承有无漏油等异常现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 520,
+    type: '判断题',
+    question: '用专用工具转动电动机转轴，观察电动机转动是否灵活，有无躁声及卡住现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 521,
+    type: '判断题',
+    question: '职业道德不倡导人们的牟利最大化观念。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 522,
+    type: '判断题',
+    question: '职业道德活动中做到表情冷漠、严肃待客是符合职业道德规范要求的。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 523,
+    type: '判断题',
+    question: '市场经济条件下，应该树立多转行多学知识多长本领的择业观念。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 524,
+    type: '判断题',
+    question: '市场经济条件下，根据服务对象来决定是否遵守承诺并不违反职业道德规范中关于诚实守信的要求。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 525,
+    type: '判断题',
+    question: '市场经济时代，勤劳是需要的，而节俭则不宜提倡。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 526,
+    type: '判断题',
+    question: '职业纪律中包括群众纪律。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 527,
+    type: '判断题',
+    question: '服务也需要创新。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 528,
+    type: '判断题',
+    question: '变压器是将一种交流电转换成同频率的另一种直流电的静止设备。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 529,
+    type: '判断题',
+    question: '各种绝缘材料的绝缘电阻强度的各种指标是抗张，抗压，抗弯，抗剪，抗撕，抗冲击等各种强度指标。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 530,
+    type: '判断题',
+    question: '电动机是使用最普遍的电气设备之一，一般在70%-95%额定负载下运行时，效率最低，功率因数大。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 531,
+    type: '判断题',
+    question: '钻夹头用来装夹直径12mm以下的钻头。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 532,
+    type: '判断题',
+    question: '为了防止发生人身触电事故和设备短路或接地故障，带电体之间、带电体与地面之间、带电体与其他设施之间、工作人员与带电体之间必须保持的最小空气间隙，称为安全距离。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 533,
+    type: '判断题',
+    question: '环境污染的形式主要有大气污染、水污染、噪音污染等。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 534,
+    type: '判断题',
+    question: '长时间与强噪声接触，人会感到烦躁不安，甚至丧失理智。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 535,
+    type: '判断题',
+    question: '工业上采用的隔声结构有隔声罩、隔声窗和微穿孔板等。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 536,
+    type: '判断题',
+    question: '质量管理是企业经营管理的一个重要内容，是企业的生命线。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 537,
+    type: '判断题',
+    question: '劳动者的基本义务中不应包括遵守职业道德。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 538,
+    type: '判断题',
+    question: '劳动者患病或负伤，在规定的医疗期内的，用人单位可以解除劳动合同。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 539,
+    type: '判断题',
+    question: '劳动安全卫生管理制度对未成年工给予了特殊的劳动保护，这其中的未成年工是指年满16周岁未满18周岁的人。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 540,
+    type: '判断题',
+    question: '呆扳手是用来拧紧或旋松有沉孔螺母的工具，由套筒和手柄两部分组成。套筒需配合螺母的规格选用。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 541,
+    type: '判断题',
+    question: '喷灯使用时操作手动泵增加油筒内的压力，并在点火碗中加入燃料油，点燃烧热喷嘴后，再慢慢打开进油阀门，当火焰喷射压力达到要求时，即可开始使用。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 542,
+    type: '判断题',
+    question: '使用时，首先通入交流电，将探测器放在被测电动机定子铁心的槽口，此时探测器的铁心与被测电动机的定子铁心构成磁回路，组成一只调压器。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 543,
+    type: '判断题',
+    question: '断条侦察器在使用时，若被测转子无断条，相当于变压器一次绕组短路，电流表读数就大，否则电流表读数就会减少。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 544,
+    type: '判断题',
+    question: '使用时，不能用千分尺测量粗糙的表面。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 545,
+    type: '判断题',
+    question: 'Z535型钻床由热继电器FR1对电动机M1和M2进行欠压保护。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 546,
+    type: '判断题',
+    question: '5t桥式起重机线路中，用凸轮控制器的12对触头进行控制，其中4对为控制电路用。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 547,
+    type: '判断题',
+    question: '用声测法寻找断线、相间低电阻短路故障很方便，但不宜寻找高电阻短路及单相接地故障。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 548,
+    type: '判断题',
+    question: '对于低压电动机，如果测得绝缘电阻小于0.5MΩ，应及时修理。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 549,
+    type: '判断题',
+    question: '进行电刷修理时，如果集电环表面的烧伤、凹凸沟槽深度达1mm左右，损伤面积达20%～30%时，应上车床进行车削。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 550,
+    type: '判断题',
+    question: '压力继电器经常用于电力拖动的油压、水压或气压控制系统中，它能根据压力源压力的变化情况决定触点的断开或闭合，以便对机械设备提供保护或控制。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 551,
+    type: '判断题',
+    question: '压力继电器装在油路的分支管路中，当管路压力超过整定值时，使触头动作。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 552,
+    type: '判断题',
+    question: '行程开关应根据主回路的额定电压和电流选择开关系列。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 553,
+    type: '判断题',
+    question: '线路暗管敷设时，管子的曲率半径：R≥6d,弯曲角度：θ≥90°。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 554,
+    type: '判断题',
+    question: 'Z535钻床调试前的准备时，将有关图样和安装、调试、使用、维修说明书准备好。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 555,
+    type: '判断题',
+    question: 'Z535钻床调试前的准备时，测量线路对地电阻是否大于2兆欧。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 556,
+    type: '判断题',
+    question: 'Z535钻床控制主回路试车时，再停电状态下，调整接触器。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 557,
+    type: '判断题',
+    question: 'Z535钻床控制主回路试车时，再停电状态下，调整热继电器，使其动作电流为主轴电动机额定电流的2倍左右。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 558,
+    type: '判断题',
+    question: '测量电动机三相绕组间、对地绝缘电阻应小于0.5MΩ。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 559,
+    type: '判断题',
+    question: '用兆欧表对电路进行测试，检查元器件及导线绝缘是否良好，相间或相线与底板之间有无断路现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 560,
+    type: '判断题',
+    question: '电动机正常运行后，测量电动机三相电流应平衡，空载和有负载时电流是否超过额定值。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 561,
+    type: '判断题',
+    question: '职业道德具有自愿性的特点。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 562,
+    type: '判断题',
+    question: '向企业员工灌输的职业道德太多了，容易使员工产生谨小慎微的观念。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 563,
+    type: '判断题',
+    question: '职业道德活动中做到表情冷漠、严肃待客是符合职业道德规范要求的。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 564,
+    type: '判断题',
+    question: '在职业活动中一贯地诚实守信会损害企业的利益。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 565,
+    type: '判断题',
+    question: '勤劳节俭虽然有利于节省资源，但不能促进企业的发展。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 566,
+    type: '判断题',
+    question: '创新既不能墨守成规，也不能标新立异。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 567,
+    type: '判断题',
+    question: '电压的方向规定由高电位点指向低电位点。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 568,
+    type: '判断题',
+    question: '变压器是将一种交流电转换成同频率的另一种交流电的静止设备。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 569,
+    type: '判断题',
+    question: '电击伤害是造成触电死亡的主要原因，是最严重的触电事故。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 570,
+    type: '判断题',
+    question: '劳动者患病或负伤，在规定的医疗期内的，用人单位可以解除劳动合同。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 571,
+    type: '判断题',
+    question: '劳动安全卫生管理制度对未成年工给予了特殊的劳动保护，这其中的未成年工是指年满16周岁未满18周岁的人。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 572,
+    type: '判断题',
+    question: '喷灯是一种利用燃烧对工件进行加工的工具，常用于锡焊。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 573,
+    type: '判断题',
+    question: '加注燃料油时，首先旋开加油螺塞，注入燃料油，油量要低于油筒最大容量的3/4，然后旋紧加油螺塞。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 574,
+    type: '判断题',
+    question: '喷灯火焰和带电体之间的安全距离为：10KV以上大于3m，10KV以下大于1.5m。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 575,
+    type: '判断题',
+    question: '喷灯打气加压时，检查并确认进油阀可靠地关闭。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 576,
+    type: '判断题',
+    question: '塞尺的片有的很薄，应注意不能测量温度较低的工件，用完后要擦试干净，及时合到夹板里。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 577,
+    type: '判断题',
+    question: '车床加工的基本运动是主轴通过卡盘或顶尖带动工件旋转，溜板带动刀架做直线运动。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 578,
+    type: '判断题',
+    question: '车床电源采用三相380V交流电源-由电源开关QS引入，总电源短路保护为FU。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 579,
+    type: '判断题',
+    question: 'CA6140型车床控制线路由控制变压器TC供电，控制电源电压为110V、熔断器FU2做过载保护。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 580,
+    type: '判断题',
+    question: '钻床是一种用途广泛的铰孔机床。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 581,
+    type: '判断题',
+    question: 'Z535型钻床的照明线路由变压器TC供给24V安全电压，SA为接通或断开照明的开关。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 582,
+    type: '判断题',
+    question: '5t桥式起重机线路中，凸轮控制器的手柄顺序工作到第五挡时，电阻器完全被短接，绕组中的电阻值为无穷大，电动机处于最高速运转。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 583,
+    type: '判断题',
+    question: '5t桥式起重机线路中，对总过电流继电器，其整定值应为全部电动机额定电流总和的2.0倍，或电动机功率最大一台的额定电流的2.5倍再加上其他电动机额定电流的总和。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 584,
+    type: '判断题',
+    question: '5t桥式起重机线路中，各电动机的过电流继电器，通常分别整定在所保护电动机额定电流的2.0～2.5倍。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 585,
+    type: '判断题',
+    question: '接触器的主触点通断时，三相应保证同时通断，其先后误差不得低于0.5ms。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 586,
+    type: '判断题',
+    question: '热继电器的环境温度与电动机的环境温度，一般相差15-20oC时，修正值约为10%。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 587,
+    type: '判断题',
+    question: '时间继电器的整定，延时在3s以下的一般时间继电器采用跑表计取时间，靠时间继电器的延时触点控制的方法来记取时间。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 588,
+    type: '判断题',
+    question: '低压断路器触点的磨损超过宽度的1/3以上或超程减少到1/2时，就应更换新触点。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 589,
+    type: '判断题',
+    question: '三相异步电动机在刚启动的瞬间，定子中的启动电流是其额定电流的3-6倍。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 590,
+    type: '判断题',
+    question: '速度继电器的弹性动触片调整的规律为，将调整螺钉向下旋，弹性动触片弹性降低，速度较高时继电器才动作。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 591,
+    type: '判断题',
+    question: '温度继电器广泛应用于电动机绕组、小功率晶体管等器件的过热保护。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 592,
+    type: '判断题',
+    question: '安装电子元件时，除接插件、熔丝座等必须紧贴底板外，其余元件距底板约3-5mm。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 593,
+    type: '判断题',
+    question: '用仪表检测电子元件的安装与焊接时，检测是否有接地现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 594,
+    type: '判断题',
+    question: '单管电压放大电路的动态分析时的电压放大过程，放大电路在直流电源和交流信号的作用下，电路中电流和电压既有直流分量，又有交流分量，即在静态值的基础上叠加一个直流值。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 595,
+    type: '判断题',
+    question: '若反馈到输入端的是直流量，则称为直流负反馈，它能稳定静态工作点。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 596,
+    type: '判断题',
+    question: 'CA6140型车床的调试前准备时，测量线路对地电阻是否大于3兆欧。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 597,
+    type: '判断题',
+    question: 'CA6140型车床的调试前准备时，检查电动机是否转动灵活，轴承有无漏油等现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 598,
+    type: '判断题',
+    question: 'Z535钻床调试前的准备时，将有关技术说明和安装、调试、使用、维修说明书准备好。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+},
+{
+    id: 599,
+    type: '判断题',
+    question: '测量电动机三相绕组间、对地绝缘电阻应小于0.5MΩ。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'B'
+},
+{
+    id: 600,
+    type: '判断题',
+    question: '用专用工具转动电动机转轴，观察电动机转动是否灵活，有无躁声及卡住现象。',
+    options: ['A. 正确', 'B. 错误'],
+    answer: 'A'
+}
+            ];
+            alert(`题库导入成功，共${questions.length} 道题目`);
+        }
+
+        function generatePaper() {
+            showAnswers = false;
+            examSubmitted = false;
+            const singleChoice = questions.filter(q => q.type === '单选题');
+            const judgeQuestions = questions.filter(q => q.type === '判断题');
+            
+            const selectedSingle = singleChoice.sort(() => Math.random() - 0.5).slice(0, 80);
+            const selectedJudge = judgeQuestions.sort(() => Math.random() - 0.5).slice(0, 40);
+            
+            questions = [...selectedSingle, ...selectedJudge].sort(() => Math.random() - 0.5);
+            answers = new Array(questions.length).fill(null);
+            renderQuestionNav();
+            showQuestion(0);
+            alert('组卷完成，包含80道单选题和40道判断题');
+        }
+
+        function startExam() {
+            const examTime = document.getElementById('exam-time').value;
+            if (!examTime || examTime <= 0) {
+                alert('请先设置有效的考试时间');
+                return;
+            }
+
+            examStarted = true;
+            btnStart.disabled = true;
+            btnSubmit.disabled = false;
+            btnImport.disabled = true;
+            btnGenerate.disabled = true;
+            btnStart.classList.add('exam-active');
+
+            if (!questions.length) return alert('请先导入或生成试卷');
+            examSubmitted = false;
+            timeLeft = examTime * 60;
+            
+            document.getElementById('answered-display').style.display = 'block';
+            updateAnsweredCount();
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                const hours = Math.floor(timeLeft / 3600);
+                const minutes = Math.floor((timeLeft % 3600) / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('remaining-time').textContent = 
+                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    submitExam();
+                }
+            }, 1000);
+        }
+
+        function submitExam() {
+            clearInterval(timer);
+            examSubmitted = true;
+            examStarted = false;
+            
+            btnStart.disabled = false;
+            btnSubmit.disabled = true;
+            btnImport.disabled = false;
+            btnGenerate.disabled = false;
+            btnStart.classList.remove('exam-active');
+
+            const finalScore = calculateScore().toFixed(1);
+            
+            const examRecord = {
+                id: studentId,
+                name: studentName,
+                score: finalScore,
+                timestamp: Date.now()
+            };
+            let scores = JSON.parse(localStorage.getItem('examScores')) || [];
+            scores.push(examRecord);
+            localStorage.setItem('examScores', JSON.stringify(scores));
+
+            alert(`考试结束，最终得分：${finalScore}`);
+            renderQuestionNav();
+        }
+
+        function calculateScore() {
+            return answers.reduce((score, answerIndex, index) => {
+                if (!questions[index] || answerIndex === null) return score;
+                
+                const userAnswer = String.fromCharCode(65 + answerIndex);
+                const correctAnswer = questions[index].answer;
+                
+                if (userAnswer === correctAnswer) {
+                    return score + (questions[index].type === '单选题' ? 1 : 0.5);
+                }
+                return score;
+            }, 0);
+        }
+
+        function renderQuestionNav() {
+            const questionNav = document.getElementById('question-nav');
+            questionNav.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const button = document.createElement('button');
+                button.textContent = index + 1;
+                
+                button.addEventListener('click', () => showQuestion(index));
+
+                if (examSubmitted) {
+                    const answerIndex = answers[index];
+                    if (answerIndex !== null) {
+                        const userAnswer = String.fromCharCode(65 + answerIndex);
+                        userAnswer === question.answer 
+                            ? button.classList.add('correct')
+                            : button.classList.add('incorrect');
+                    }
+                    button.title = `正确答案：${question.answer}`;
+                } else if (answers[index] !== null) {
+                    button.classList.add('answered');
+                }
+                
+                questionNav.appendChild(button);
+            });
+        }
+
+        function showQuestion(index) {
+            currentQuestionIndex = index;
+            const question = questions[index];
+            const content = document.getElementById('question-content');
+            
+            content.innerHTML = `
+                <h3>${question.type} （第${index + 1}题）</h3>
+                <p>${question.question}</p>
+                <div class="options">
+                    ${question.options.map((option, i) => `
+                        <div class="option-item" 
+                             onclick="selectAnswer(${i})" 
+                             ${answers[index] === i ? 'style="border-color: #6c8ebf;"' : ''}>
+                            ${option}
+                        </div>
+                    `).join('')}
+                </div>
+                ${(examSubmitted || showAnswers) ? `
+                    <div class="correct-answer">
+                        正确答案：${question.answer} 
+                        ${answers[index] !== null ? `｜你的答案：${String.fromCharCode(65 + answers[index])}` : ''}
+                    </div>
+                ` : ''}
+            `;
+            updateAnsweredCount();
+        }
+
+        function selectAnswer(answerIndex) {
+            if (!examStarted || examSubmitted) return;
+            
+            answers[currentQuestionIndex] = answerIndex;
+            updateAnsweredCount();
+            renderQuestionNav();
+            
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) showQuestion(currentQuestionIndex - 1);
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) showQuestion(currentQuestionIndex + 1);
+        }
+
+        function updateAnsweredCount() {
+            const answered = answers.filter(a => a !== null).length;
+            document.getElementById('answered-count').textContent = answered;
+            document.getElementById('remaining-questions').textContent = 
+                `${questions.length - answered}（共${questions.length}题）`;
+        }
+    </script>
+</body>
+</html>

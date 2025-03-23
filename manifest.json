@@ -1,0 +1,20 @@
+{
+  "name": "电工理论考试系统",
+  "short_name": "电工考试",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6c8ebf",
+  "theme_color": "#6c8ebf",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
