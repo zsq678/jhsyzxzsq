@@ -4,8 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <title>初级维修电工理论考试系统</title>
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/manifest.json">
     <style>
         :root {
             --primary-color: #6c8ebf;
@@ -26,7 +24,6 @@
             height: 100vh;
         }
 
-        /* 所有原有CSS样式完整保留 */
         .header {
             background: var(--primary-color);
             padding: 10px 20px;
@@ -232,55 +229,92 @@
             gap: 10px;
         }
 
+        /* 登录界面美化修改开始 */
+        #login-modal {
+            background: linear-gradient(135deg, #f5f9fc 0%, #e3f2fd 100%) !important;
+        }
+
         #login-modal > div {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15) !important;
             width: 600px !important;
             min-height: 400px !important;
             padding: 40px !important;
             border-radius: 15px !important;
         }
-        
+
         #login-modal h2 {
+            color: #2e7d32 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
             font-size: 28px !important;
             margin-bottom: 40px !important;
+        }
+
+        #login-modal input {
+            background-color: #e8f5e9 !important;
+            border: 2px solid #81c784 !important;
+            border-radius: 8px !important;
+            transition: all 0.3s !important;
+            font-size: 18px !important;
+            padding: 15px !important;
+            margin: 20px 0 !important;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #login-modal input:focus {
+            box-shadow: 0 0 8px rgba(129, 199, 132, 0.3) !important;
+            border-color: #4CAF50 !important;
+            outline: none;
+        }
+
+        #login-modal button {
+            background: linear-gradient(145deg, #4CAF50, #45a049) !important;
+            border: none !important;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.2),
+                        -1px -1px 4px rgba(255,255,255,0.5) !important;
+            position: relative;
+            border-radius: 12px !important;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+            color: white !important;
+            font-size: 20px !important;
+            padding: 18px 0 !important;
+            width: 100%;
+            transition: all 0.3s !important;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #login-modal button:hover {
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.25),
+                        -2px -2px 6px rgba(255,255,255,0.6) !important;
+            background: linear-gradient(145deg, #66bb6a, #4CAF50) !important;
         }
 
         #login-modal select {
             font-size: 18px !important;
             padding: 15px !important;
-            border: 2px solid #6c8ebf !important;
+            border: 2px solid #81c784 !important;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 20px;
+            background: #e8f5e9;
         }
-
-        #login-modal input {
-            font-size: 18px !important;
-            padding: 15px !important;
-            margin: 20px 0 !important;
-            border: 2px solid #ddd !important;
-        }
-
-        #login-modal button {
-            background-color: #add8e6 !important;
-            color: #00008b !important;
-            font-size: 20px !important;
-            padding: 18px 0 !important;
-            border-radius: 8px !important;
-            transition: all 0.3s !important;
-        }
-
-        #login-modal button:hover {
-            background-color: #87ceeb !important;
-            transform: scale(1.02);
-        }
+        /* 登录界面美化修改结束 */
     </style>
 </head>
 
 <body>
-    <!-- 原网页所有HTML结构完整保留 -->
     <div id="answered-display" style="display: none;">
         已答题目：<span id="answered-count">0</span>
     </div>
 
-    <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center;">
-        <div style="background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+    <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center;">
+        <div>
             <h2>系统登录</h2>
             <select id="user-type" onchange="toggleLoginFields()">
                 <option value="student">考生登录</option>
@@ -353,61 +387,7 @@
         </div>
     </div>
 
-    <!-- 原JavaScript代码完整保留 -->
     <script>
-        // ======== PWA安装引导 ========
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            showInstallButton();
-        });
-
-        function showInstallButton() {
-            if(document.getElementById('installBtn')) return;
-            
-            const installBtn = document.createElement('button');
-            installBtn.id = 'installBtn';
-            installBtn.innerHTML = '📱 安装为APP';
-            installBtn.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                padding: 12px 24px;
-                background: var(--primary-color);
-                color: white;
-                border: none;
-                border-radius: 25px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                cursor: pointer;
-                z-index: 9999;
-            `;
-            installBtn.onclick = installPWA;
-            document.body.appendChild(installBtn);
-        }
-
-        function installPWA() {
-            if(deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(choiceResult => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('installBtn').remove();
-                    }
-                    deferredPrompt = null;
-                });
-            }
-        }
-
-        // ======== Service Worker注册 ========
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('ServiceWorker 注册成功'))
-                    .catch(err => console.log('ServiceWorker 注册失败: ', err));
-            });
-        }
-
-        // ======== 原考试系统JavaScript逻辑 ========
         let currentQuestionIndex = 0;
         let questions = [];
         let answers = [];
