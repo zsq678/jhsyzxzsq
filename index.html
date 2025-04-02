@@ -5049,6 +5049,11 @@ answer: 'D'
             
             questions = [...selectedSingle, ...selectedJudge].sort(() => Math.random() - 0.5);
             answers = new Array(questions.length).fill(null);
+            
+            // 新增状态重置
+            examSubmitted = false;
+            practiceMode = false;
+            
             renderQuestionNav();
             showQuestion(0);
             alert('组卷完成，包含80道单选题和40道判断题');
@@ -5057,16 +5062,14 @@ answer: 'D'
         function startExam() {
             const examTime = document.getElementById('exam-time').value;
             
-            // 检查考试时间有效性
             if (!examTime || examTime <= 0) {
                 alert('请先设置有效的考试时间');
                 return;
             }
 
-            // 检查题目是否存在
             if (questions.length === 0) {
                 alert('请先导入题库或使用智能组卷生成试卷');
-                return; // 关键修改：直接返回不修改任何状态
+                return;
             }
 
             practiceMode = false;
@@ -5204,14 +5207,12 @@ answer: 'D'
             updateAnsweredCount();
             renderQuestionNav();
 
-            // 考试模式自动跳转逻辑
             if (examStarted && !practiceMode) {
                 if (currentQuestionIndex < questions.length - 1) {
                     currentQuestionIndex++;
                     showQuestion(currentQuestionIndex);
                 }
             } else {
-                // 练习模式保持当前题目显示答案
                 showQuestion(currentQuestionIndex);
             }
         }
