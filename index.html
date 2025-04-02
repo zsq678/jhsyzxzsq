@@ -10,7 +10,7 @@
             --secondary-color: #f0f5ff;
             --accent-color: #4CAF50;
             --exam-active-color: #45a049;
-            --practice-color: #2196F3; /* 新增练习模式蓝色 */
+            --practice-color: #2196F3;
         }
 
         body {
@@ -122,7 +122,6 @@
             color: white;
         }
 
-        /* 新增练习模式答题样式 */
         .question-nav button.answered-practice {
             background: var(--practice-color) !important;
             color: white;
@@ -435,7 +434,6 @@
         let timeLeft = 0;
         let studentId = '';
         let studentName = '';
-        let showAnswers = false;
         const ADMIN_ACCOUNT = 'admin';
         const ADMIN_PASSWORD = 'admin123';
 
@@ -523,7 +521,6 @@
             practiceMode = true;
             examStarted = false;
             examSubmitted = false;
-            showAnswers = false;
             
             if (allQuestions.length === 0) {
                 alert('请先导入题库');
@@ -588,7 +585,7 @@
 
         function importQuestions() {
             allQuestions = [
-               {
+              {
         id: 1,
         type: '单选题',
         question: '在市场经济条件下，职业道德具有(　　)的社会功能。',
@@ -5044,8 +5041,6 @@ answer: 'D'
         }
 
         function generatePaper() {
-            showAnswers = false;
-            examSubmitted = false;
             const singleChoice = allQuestions.filter(q => q.type === '单选题');
             const judgeQuestions = allQuestions.filter(q => q.type === '判断题');
             
@@ -5061,9 +5056,17 @@ answer: 'D'
 
         function startExam() {
             const examTime = document.getElementById('exam-time').value;
+            
+            // 检查考试时间有效性
             if (!examTime || examTime <= 0) {
                 alert('请先设置有效的考试时间');
                 return;
+            }
+
+            // 检查题目是否存在
+            if (questions.length === 0) {
+                alert('请先导入题库或使用智能组卷生成试卷');
+                return; // 关键修改：直接返回不修改任何状态
             }
 
             practiceMode = false;
@@ -5074,7 +5077,6 @@ answer: 'D'
             btnGenerate.disabled = true;
             btnStart.classList.add('exam-active');
 
-            if (!questions.length) return alert('请先导入或生成试卷');
             examSubmitted = false;
             timeLeft = examTime * 60;
             
@@ -5149,7 +5151,7 @@ answer: 'D'
 
                 if (practiceMode) {
                     if (answers[index] !== null) {
-                        button.classList.add('answered-practice'); // 练习模式使用蓝色样式
+                        button.classList.add('answered-practice');
                     }
                 } else if (examSubmitted) {
                     const answerIndex = answers[index];
@@ -5185,7 +5187,7 @@ answer: 'D'
                         </div>
                     `).join('')}
                 </div>
-                ${(answers[index] !== null || examSubmitted) ? `
+                ${((practiceMode && answers[index] !== null) || examSubmitted) ? `
                     <div class="correct-answer">
                         正确答案：${question.answer} 
                         ${answers[index] !== null ? `｜你的答案：${String.fromCharCode(65 + answers[index])}` : ''}
@@ -5201,14 +5203,16 @@ answer: 'D'
             answers[currentQuestionIndex] = answerIndex;
             updateAnsweredCount();
             renderQuestionNav();
-            
-            if (practiceMode) {
-                showQuestion(currentQuestionIndex);
-            } else {
+
+            // 考试模式自动跳转逻辑
+            if (examStarted && !practiceMode) {
                 if (currentQuestionIndex < questions.length - 1) {
                     currentQuestionIndex++;
                     showQuestion(currentQuestionIndex);
                 }
+            } else {
+                // 练习模式保持当前题目显示答案
+                showQuestion(currentQuestionIndex);
             }
         }
 
