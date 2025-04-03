@@ -430,6 +430,7 @@
         let examStarted = false;
         let examSubmitted = false;
         let practiceMode = false;
+        let isPaperGenerated = false; // 新增组卷状态标识
         let timer;
         let timeLeft = 0;
         let studentId = '';
@@ -452,6 +453,7 @@
             practiceMode = false;
             examStarted = false;
             examSubmitted = false;
+            isPaperGenerated = false; // 新增重置状态
             currentQuestionIndex = 0;
             questions = [];
             answers = [];
@@ -585,7 +587,7 @@
 
         function importQuestions() {
             allQuestions = [
-              {
+            {
         id: 1,
         type: '单选题',
         question: '在市场经济条件下，职业道德具有(　　)的社会功能。',
@@ -5034,9 +5036,8 @@ answer: 'D'
     question: '用专用工具转动电动机转轴，观察电动机转动是否灵活，有无躁声及卡住现象。',
     options: ['A. 正确', 'B. 错误'],
     answer: 'A'
-}
+}  
             ];
-            questions = allQuestions;
             alert(`题库导入成功，共${allQuestions.length} 道题目`);
         }
 
@@ -5050,7 +5051,7 @@ answer: 'D'
             questions = [...selectedSingle, ...selectedJudge].sort(() => Math.random() - 0.5);
             answers = new Array(questions.length).fill(null);
             
-            // 新增状态重置
+            isPaperGenerated = true;
             examSubmitted = false;
             practiceMode = false;
             
@@ -5067,8 +5068,8 @@ answer: 'D'
                 return;
             }
 
-            if (questions.length === 0) {
-                alert('请先导入题库或使用智能组卷生成试卷');
+            if (!isPaperGenerated || questions.length === 0) {
+                alert('请先使用智能组卷生成试卷');
                 return;
             }
 
