@@ -5461,27 +5461,31 @@ function shuffleArray(arr) {
     }
 }
         function startExam() {
-            if (!isPaperGenerated) {
-                alert('请先生成试卷');
-                return;
-            }
-            if (examStarted) {
-                alert('考试已开始');
-                return;
-            }
-            const examMinutes = parseInt(document.getElementById('exam-time').value) || 30;
-            timeLeft = examMinutes * 60;
-            examStarted = true;
-            examSubmitted = false;
-            btnStart.disabled = true;
-            btnSubmit.disabled = false;
-            btnGenerate.disabled = true;
-            btnImport.disabled = true;
-            btnStart.classList.add('exam-active');
-            startTimer();
-            document.getElementById('answered-display').style.display = 'block';
-            alert('考试开始，时间为 ' + examMinutes + ' 分钟');
-        }
+    if (!isPaperGenerated) {
+        alert('请先生成试卷');
+        return;
+    }
+    if (examStarted) {
+        alert('考试已开始');
+        return;
+    }
+    const examMinutes = parseInt(document.getElementById('exam-time').value) || 30;
+    timeLeft = examMinutes * 60;
+    examStarted = true;
+    examSubmitted = false;
+    btnStart.disabled = true;
+    btnSubmit.disabled = false;
+    btnGenerate.disabled = true;
+    btnImport.disabled = true;
+    // 考试中：禁用题库练习、错题练习、我的记录
+    document.getElementById('btn-practice').disabled = true;
+    document.querySelector('button[onclick="showWrongPanel()"]').disabled = true;
+    document.querySelector('button[onclick="showRecordPanel()"]').disabled = true;
+    btnStart.classList.add('exam-active');
+    startTimer();
+    document.getElementById('answered-display').style.display = 'block';
+    alert('考试开始，时间为 ' + examMinutes + ' 分钟');
+}
         
         function startTimer() {
             clearInterval(timer);
@@ -5518,7 +5522,9 @@ function shuffleArray(arr) {
                 }
             });
             const score = Math.round((correctCount / questions.length) * 100);
-            
+      document.getElementById('btn-practice').disabled = false;
+document.querySelector('button[onclick="showWrongPanel()"]').disabled = false;
+document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;      
             // 保存考试记录（包含答题详情）
             const examRecord = {
                 id: studentId,
