@@ -517,10 +517,11 @@
             </div>
             <div id="remaining-time">00:00:00</div>
             <div class="control-buttons">
-                <button onclick="resetExam()">返回</button>
+                <button onclick="resetExam()">退出登录</button>
                 <button id="btn-import" onclick="importQuestions()">题库导入</button>
                 <button id="btn-generate" onclick="generatePaper()">智能组卷</button>
                 <button id="btn-practice" onclick="startPractice()">题库练习</button>
+<button id="btn-exit-practice" onclick="exitPractice()" style="background:#f44336;display:none;">退出题库练习</button>
                 <button onclick="showWrongPanel()">错题练习</button>
                 <button onclick="showRecordPanel()">我的考试记录</button>
                 <button id="btn-start" onclick="startExam()">开始考试</button>
@@ -5055,10 +5056,14 @@ answer: 'D'
             renderExamRecords(); // 渲染详细的考试记录
         }
         function showWrongPanel() {
-            document.querySelector('.container').style.display = 'none';
-            document.getElementById('wrong-panel').style.display = 'block';
-            renderWrong();
-        }
+if (practiceMode) {
+        alert('请先退出题库练习，再进行错题练习');
+        return;
+    }
+    document.querySelector('.container').style.display = 'none';
+    document.getElementById('wrong-panel').style.display = 'block';
+    renderWrong();
+}         
         function closePanel() {
             document.getElementById('record-panel').style.display = 'none';
             document.getElementById('wrong-panel').style.display = 'none';
@@ -5258,6 +5263,16 @@ answer: 'D'
         }
         
         function resetExam() {
+// 题库练习模式拦截
+    if (practiceMode) {
+        alert('请先退出题库练习');
+        return;
+    }
+    // 考试进行中拦截
+    if (examStarted && !examSubmitted) {
+        alert('请先交卷');
+        return;
+    }
             practiceMode = false;
             examStarted = false;
             examSubmitted = false;
@@ -5267,6 +5282,7 @@ answer: 'D'
             answers = [];
             timeLeft = 0;
             clearInterval(timer);
+document.getElementById('btn-exit-practice').style.display = 'none';
             document.getElementById('login-modal').style.display = 'flex';
             document.querySelector('.container').style.display = 'none';
             document.getElementById('admin-panel').style.display = 'none';
@@ -5326,6 +5342,7 @@ answer: 'D'
         }
         
         function startPractice() {
+document.getElementById('btn-exit-practice').style.display = 'inline-block';
             practiceMode = true;
             examStarted = false;
             examSubmitted = false;
@@ -5342,6 +5359,7 @@ answer: 'D'
             showQuestion(0);
             updateAnsweredCount();
             alert('已进入题库练习，共' + questions.length + '道题目');
+document.querySelector('button[onclick="showWrongPanel()"]').disabled = true;
         }
         
         function deleteAllScores() {
@@ -5393,6 +5411,10 @@ answer: 'D'
         }
         
         function generatePaper() {
+if (practiceMode) {
+        alert('请先退出题库练习模式，再进行考试');
+        return;
+    }
             // 【修改1】组卷前重置考试状态，允许重复组卷
        examStarted = false;
     examSubmitted = false;
@@ -5461,6 +5483,10 @@ function shuffleArray(arr) {
     }
 }
         function startExam() {
+if (practiceMode) {
+        alert('请先退出题库练习模式，再进行考试');
+        return;
+    }
 practiceMode = false;
     if (!isPaperGenerated) {
         alert('请先生成试卷');
@@ -5645,10 +5671,38 @@ document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;
             }
         }
         
-        function updateAnsweredCount() {
-            const count = answers.filter(a => a !== null).length;
-            document.getElementById('answered-count').textContent = count;
-        }
+       function updateAnsweredCount() {
+    const count = answers.filter(a => a !== null).length;
+    document.getElementById('answered-count').textContent = count;
+}
+
+// 退出题库练习（移到外面，全局函数）
+function exitPractice() {
+   if (!confirm('确定退出题库练习吗？')) return;
+    practiceMode = false;
+    currentQuestionIndex = 0;
+    questions = [];
+    answers = [];
+    document.getElementById('btn-exit-practice').style.display = 'none';
+    document.getElementById('btn-practice').disabled = false;
+    document.getElementById('btn-generate').disabled = false;
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('question-nav').innerHTML = '';
+    document.getElementById('question-content').innerHTML = '';
+    document.getElementById('remaining-questions').textContent = '0/0';
+    document.getElementById('answered-display').style.display = 'none';
+
+    // 新增：退出练习后恢复错题按钮
+    document.querySelector('button[onclick="showWrongPanel()"]').disabled = false;
+    alert('已退出题库练习');
+}
+   </script>
+
+    <!-- 关闭网页确认框 -->
+    <script>
+        window.onbeforeunload = function() {
+            return "确定要离开页面吗？";
+        };
     </script>
 </body>
 </html>
