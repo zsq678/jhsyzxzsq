@@ -31,7 +31,6 @@
             justify-content: space-between;
             align-items: center;
             color: white;
-            position: relative;
         }
         .control-buttons button {
             margin-left: 10px;
@@ -190,15 +189,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             z-index: 1000;
             font-weight: bold;
-        }
-        #remaining-time {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            color: red;
-            font-weight: bold;
-        }
-        #remaining-questions {
+        } 
+       #remaining-time {
+    color: red;
+    font-weight: bold;
+    white-space: nowrap;
+    display: none; /* 登录前：数字隐藏 */
+}
+#remaining-questions {
             color: red;
         }
         #admin-panel {
@@ -446,9 +444,11 @@
     </style>
 </head>
 <body>
-    <div id="answered-display" style="display: none;">
-        已答题目：<span id="answered-count">0</span>
-    </div>
+  <div id="answered-display" style="display: none; align-items: center; gap: 15px;">
+    <span id="time-label" style="display:none;">剩余时间</span>
+    <span id="remaining-time" style="display:none;">00:00:00</span>
+    <span>已答题目：<span id="answered-count">0</span></span>
+</div>
     <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center;">
         <div>
             <h2>系统登录</h2>
@@ -515,10 +515,10 @@
             <div class="student-info">
                 考生姓名：<span id="student-name">未登录</span> | 准考证号：<span id="student-id">未登录</span> | 剩余题数：<span id="remaining-questions">0/0</span>
             </div>
-            <div id="remaining-time">00:00:00</div>
-            <div class="control-buttons">
+          <div class="control-buttons">
                 <button onclick="resetExam()">退出登录</button>
                 <button id="btn-import" onclick="importQuestions()">题库导入</button>
+                <button onclick="resetUsedQuestions()">题库重置</button>
                 <button id="btn-generate" onclick="generatePaper()">智能组卷</button>
                 <button id="btn-practice" onclick="startPractice()">题库练习</button>
 <button id="btn-exit-practice" onclick="exitPractice()" style="background:#f44336;display:none;">退出题库练习</button>
@@ -5339,6 +5339,7 @@ document.getElementById('btn-exit-practice').style.display = 'none';
             document.getElementById('remaining-questions').textContent = '0/0';
             document.getElementById('question-nav').innerHTML = '';
             document.getElementById('question-content').innerHTML = '';
+document.getElementById('answered-display').style.display = 'none';
         }
         
         function startPractice() {
@@ -5412,67 +5413,72 @@ document.querySelector('button[onclick="showWrongPanel()"]').disabled = true;
         
         function generatePaper() {
 if (practiceMode) {
-        alert('请先退出题库练习模式，再进行考试');
-        return;
-    }
-            // 【修改1】组卷前重置考试状态，允许重复组卷
-       examStarted = false;
-    examSubmitted = false;
-    isPaperGenerated = false;
+    alert('请先退出题库练习模式，再进行考试');
+    return;
+}
+// 组卷前重置考试状态
+examStarted = false;
+examSubmitted = false;
+isPaperGenerated = false;
+if (allQuestions.length === 0) {
+    alert('请先导入题库');
+    return;
+}
+// 分别筛选未用单选、未用判断
+const unusedSingle = allQuestions.filter(q => q.type === '单选题' && !usedQuestionIds.includes(q.id));
+const unusedJudge = allQuestions.filter(q => q.type === '判断题' && !usedQuestionIds.includes(q.id));
 
-    if (allQuestions.length === 0) {
-        alert('请先导入题库');
-        return;
-    }
+// 先把所有未用题目合并
+const unusedAll = [...unusedSingle, ...unusedJudge];
 
-    // 筛选未用题目
-    const unusedAll = allQuestions.filter(q => !usedQuestionIds.includes(q.id));
+// 判断题用完：只重置判断题
+if (unusedJudge.length === 0) {
+    // 保留已用单选题，只清空判断题
+    usedQuestionIds = usedQuestionIds.filter(id => {
+        const q = allQuestions.find(x => x.id === id);
+        return q && q.type === '单选题';
+    });
+    alert('判断题已用完，已自动重置判断题题库！');
+    generatePaper();
+    return;
+}
 
-    // 题目已全部用完：重置已用记录
-    if (unusedAll.length === 0) {
-        if (!confirm('所有题目已用完，确定重置题库重新组卷？')) return;
-        usedQuestionIds = []; // 清空已用
-        generatePaper(); // 递归重新组卷
-        return;
-    }
+// 单选题也用完：全部重置
+if (unusedSingle.length === 0) {
+    if (!confirm('单选题已全部用完，确定重置整个题库？')) return;
+    usedQuestionIds = [];
+    generatePaper();
+    return;
+}
 
-    // 分离未用单选、判断
-    const singleList = unusedAll.filter(q => q.type === '单选题');
-    const judgeList = unusedAll.filter(q => q.type === '判断题');
-
-    const needSingle = 80;
-    const needJudge = 40;
-
-    // 打乱顺序
-    shuffleArray(singleList);
-    shuffleArray(judgeList);
-
-    // 取题（不足则取剩余全部）
-    const selectedSingle = singleList.slice(0, needSingle);
-    const selectedJudge = judgeList.slice(0, needJudge);
-
-    // 合并试卷
-    questions = [...selectedSingle, ...selectedJudge];
-    answers = new Array(questions.length).fill(null);
-    isPaperGenerated = true;
-
-    // 把本次抽过的题目ID加入已用
-    questions.forEach(q => usedQuestionIds.push(q.id));
-
-    // 渲染
-    renderQuestionNav();
-    showQuestion(0);
-    updateAnsweredCount();
-    document.getElementById('remaining-questions').textContent = `${questions.length}/${questions.length}`;
-
-    // 按钮状态
-    btnStart.disabled = false;
-    btnSubmit.disabled = true;
-    btnGenerate.disabled = false;
-    btnImport.disabled = false;
-    btnStart.classList.remove('exam-active');
-
-    alert(`组卷成功：单选${selectedSingle.length} + 判断${selectedJudge} = ${questions.length}题\n剩余未用：${unusedAll.length - questions.length}题`);
+const singleList = unusedSingle;
+const judgeList = unusedJudge;
+const needSingle = 80;
+const needJudge = 40;
+// 打乱顺序
+shuffleArray(singleList);
+shuffleArray(judgeList);
+// 取题
+const selectedSingle = singleList.slice(0, needSingle);
+const selectedJudge = judgeList.slice(0, needJudge);
+// 合并试卷
+questions = [...selectedSingle, ...selectedJudge];
+answers = new Array(questions.length).fill(null);
+isPaperGenerated = true;
+// 把本次抽过的题目ID加入已用
+questions.forEach(q => usedQuestionIds.push(q.id));
+// 渲染
+renderQuestionNav();
+showQuestion(0);
+updateAnsweredCount();
+document.getElementById('remaining-questions').textContent = `${questions.length}/${questions.length}`;
+// 按钮状态
+btnStart.disabled = false;
+btnSubmit.disabled = true;
+btnGenerate.disabled = false;
+btnImport.disabled = false;
+btnStart.classList.remove('exam-active');
+alert(`组卷成功：单选${selectedSingle.length} + 判断${selectedJudge} = ${questions.length}题\n剩余未用：${unusedAll.length - questions.length}题`);
 }
 
 // 打乱数组
@@ -5512,6 +5518,9 @@ practiceMode = false;
     startTimer();
     document.getElementById('answered-display').style.display = 'block';
     alert('考试开始，时间为 ' + examMinutes + ' 分钟');
+document.getElementById('answered-display').style.display = 'flex';
+document.getElementById('time-label').style.display = 'inline';
+document.getElementById('remaining-time').style.display = 'inline';
 }
         
         function startTimer() {
@@ -5521,6 +5530,8 @@ practiceMode = false;
                 const hours = Math.floor(timeLeft / 3600);
                 const minutes = Math.floor((timeLeft % 3600) / 60);
                 const seconds = timeLeft % 60;
+document.getElementById('remaining-time').style.display = 'inline';
+document.querySelector('#answered-display span:first-child').style.display = 'inline';
                 document.getElementById('remaining-time').textContent = 
                     `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
@@ -5695,6 +5706,14 @@ function exitPractice() {
     // 新增：退出练习后恢复错题按钮
     document.querySelector('button[onclick="showWrongPanel()"]').disabled = false;
     alert('已退出题库练习');
+}
+// 题库重置：清空已抽题记录，恢复所有题目可抽
+function resetUsedQuestions() {
+    if (!confirm('确定要重置题库吗？\n重置后智能组卷会从头抽取所有题目。')) {
+        return;
+    }
+    usedQuestionIds = []; // 清空已用ID
+    alert('题库重置成功！已恢复所有题目可抽取。');
 }
    </script>
 
