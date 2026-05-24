@@ -496,6 +496,10 @@
         <div class="admin-controls">
             <button onclick="exportCSV()">导出成绩CSV</button>
             <button onclick="deleteAllScores()" style="background-color: #ff4444; color: white;">删除所有成绩</button>
+<button onclick="adminImportQuestions()" style="background:#2196F3;color:white;">导入题库</button>
+    <button onclick="adminExportQuestions()" style="background:#4CAF50;color:white;">导出题库</button>
+    <button onclick="adminClearQuestions()" style="background:#f44336;color:white;">清空题库</button>
+    <button onclick="adminPreviewQuestions()" style="background:#ff9800;color:white;">预览题库</button>
         </div>
         <table id="scores-table">
             <thead>
@@ -5561,6 +5565,10 @@ document.querySelector('#answered-display span:first-child').style.display = 'in
                 }
             });
             const score = Math.round((correctCount / questions.length) * 100);
+// 交卷确认（有确定/取消）
+    if (!confirm(`考试结束！你的得分是：${score}分（共${questions.length}题，答对${correctCount}）\n确定提交吗？`)) {
+        return;
+    }
       document.getElementById('btn-practice').disabled = false;
 document.querySelector('button[onclick="showWrongPanel()"]').disabled = false;
 document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;      
@@ -5658,7 +5666,12 @@ document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;
         }
         
         function selectAnswer(optIndex) {
-            if (examSubmitted) return;
+// 组卷后、未开始考试，禁止答题
+    if (!examStarted && !practiceMode) {
+        alert('请先点击【开始考试】按钮，再答题');
+        return;
+}
+      if (examSubmitted) return;
             const selectedOption = questions[currentQuestionIndex].options[optIndex].charAt(0);
             answers[currentQuestionIndex] = selectedOption;
             renderQuestionNav(examSubmitted);
@@ -5723,6 +5736,71 @@ function resetUsedQuestions() {
         window.onbeforeunload = function() {
             return "确定要离开页面吗？";
         };
+// ========== 管理员题库管理功能 ==========
+// 管理员导入题库（JSON格式）
+function adminImportQuestions() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (!Array.isArray(data)) throw '格式错误';
+                localStorage.setItem('allQuestions', JSON.stringify(data));
+                allQuestions = [...data];
+                alert(`导入成功，共 ${data.length} 题`);
+            } catch (err) {
+                alert('导入失败，请检查JSON格式');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// 管理员导出题库（JSON备份）
+function adminExportQuestions() {
+    const dataStr = JSON.stringify(allQuestions, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `题库_${new Date().toLocaleDateString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('题库导出成功');
+}
+
+// 管理员清空题库
+function adminClearQuestions() {
+    if (!confirm('确定清空所有题库？不可恢复！')) return;
+    localStorage.removeItem('allQuestions');
+    allQuestions = [];
+    alert('题库已清空');
+}
+
+// 管理员预览题库（弹窗）
+function adminPreviewQuestions() {
+    if (allQuestions.length === 0) {
+        alert('题库为空');
+        return;
+    }
+    let text = `题库总数：${allQuestions.length}题\n\n`;
+    allQuestions.slice(0, 20).forEach((q, i) => {
+        text += `${i+1}. ${q.question}\n答案：${q.answer}\n\n`;
+    });
+    if (allQuestions.length > 20) text += `...（仅显示前20题）`;
+    alert(text);
+}
+
+// 页面加载时读取本地题库（覆盖示例题库）
+const savedQuestions = localStorage.getItem('allQuestions');
+if (savedQuestions) {
+    allQuestions = JSON.parse(savedQuestions);
+}
     </script>
 </body>
 </html>
