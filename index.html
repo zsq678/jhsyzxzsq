@@ -23,6 +23,8 @@
             display: none;
             grid-template-rows: auto 1fr auto;
             height: 100vh;
+max-width: 85%;   /* 缩到85% */
+    margin: 0 auto;   /* 水平居中 */
         }
         .header {
             background: var(--primary-color);
@@ -306,9 +308,10 @@
             display: none;
             padding: 20px;
             background: white;
-            margin: 20px;
+           margin: 20px auto; /* 上下20，左右居中 */
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ max-width: 85%;     /* 缩到85% */
         }
         .panel h2 {
             color: #333;
@@ -335,6 +338,11 @@
             padding: 15px;
             position: relative;
         }
+#question-review-list,
+#wrong-list {
+    max-height: 82vh;
+    overflow-y: auto;
+}
         .question-review.wrong {
             background-color: var(--wrong-color);
             border-left: 4px solid #f44336;
@@ -5026,7 +5034,7 @@ answer: 'D'
 }
                 // 可继续添加更多题目...
             ];
-        }
+    }
         // 页面加载时初始化题库
         window.onload = function() {
             initQuestionBank();
@@ -5682,8 +5690,10 @@ document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;
             if (practiceMode) {
                 showQuestion(currentQuestionIndex);
             }
+if (examStarted && !practiceMode) {
+        nextQuestion();
         }
-        
+     }   
         function prevQuestion() {
             if (currentQuestionIndex > 0) {
                 showQuestion(currentQuestionIndex - 1);
