@@ -86,13 +86,21 @@ max-width: 85%;   /* 缩到85% */
             gap: 20px;
             padding: 20px;
         }
-        .question-list {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-        }
+      .question-list {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+display: flex;
+    flex-direction: column; /* 垂直排列：标题在上，滚动区在下 */
+    height: calc(100vh - 180px); /* 关键：固定高度 */
+    overflow-y: auto; /* 关键：纵向滚动 */
+}
+.nav-scroll {
+    flex: 1; /* 占满剩余高度 */
+    overflow-y: auto; /* 仅这个区域滚动 */
+    margin-top: 10px; /* 和标题留点间距 */
+}
         .question-nav {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -491,10 +499,10 @@ max-width: 85%;   /* 缩到85% */
             <button class="data-btn clear-wrong-btn" onclick="clearWrongBook()">清空错题本</button>
         </div>
     </div>
-    <!-- 错题练习面板 -->
+    <!-- 错题回顾面板 -->
     <div id="wrong-panel" class="panel">
         <button class="back-home" onclick="closePanel()">返回主页</button>
-        <h2>错题练习</h2>
+        <h2>错题回顾</h2>
         <div id="wrong-list">
             <!-- 错题内容会动态生成 -->
         </div>
@@ -534,7 +542,7 @@ max-width: 85%;   /* 缩到85% */
                 <button id="btn-generate" onclick="generatePaper()">智能组卷</button>
                 <button id="btn-practice" onclick="startPractice()">题库练习</button>
 <button id="btn-exit-practice" onclick="exitPractice()" style="background:#f44336;display:none;">退出题库练习</button>
-                <button onclick="showWrongPanel()">错题练习</button>
+                <button onclick="showWrongPanel()">错题回顾</button>
                 <button onclick="showRecordPanel()">我的考试记录</button>
                 <button id="btn-start" onclick="startExam()">开始考试</button>
                 <button id="btn-submit" onclick="submitExam()" disabled>交卷</button>
@@ -544,7 +552,9 @@ max-width: 85%;   /* 缩到85% */
         <div class="main-content">
             <div class="question-list">
                 <h3>题目列表</h3>
-                <div class="question-nav" id="question-nav"></div>
+               <div class="nav-scroll">
+        <div class="question-nav" id="question-nav"></div>
+    </div>
             </div>
             <div class="question-area">
                 <div class="question-content" id="question-content"></div>
@@ -5508,7 +5518,7 @@ if (practiceMode) {
     }
 practiceMode = false;
     if (!isPaperGenerated) {
-        alert('请先生成试卷');
+        alert('请先智能组卷');
         return;
     }
     if (examStarted) {
@@ -5523,7 +5533,7 @@ practiceMode = false;
     btnSubmit.disabled = false;
     btnGenerate.disabled = true;
     btnImport.disabled = true;
-    // 考试中：禁用题库练习、错题练习、我的记录
+    // 考试中：禁用题库练习、错题回顾、我的记录
     document.getElementById('btn-practice').disabled = true;
     document.querySelector('button[onclick="showWrongPanel()"]').disabled = true;
     document.querySelector('button[onclick="showRecordPanel()"]').disabled = true;
