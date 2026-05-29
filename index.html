@@ -457,6 +457,9 @@ display: flex;
             font-weight: bold;
             color: #4CAF50;
         }
+/* 练习模式对错标记 */
+.opt-correct { background-color: #e8f5e9 !important; border-color: #4CAF50 !important; }
+.opt-wrong   { background-color: #ffebee !important; border-color: #f44336 !important; }
     </style>
 </head>
 <body>
@@ -483,6 +486,17 @@ display: flex;
             <button onclick="login()">登录</button>
         </div>
     </div>
+<!-- 专项练习二级菜单 -->
+<div id="special-menu" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,0.2);z-index:9999;text-align:center;">
+    <h2>专项练习</h2>
+    <div style="margin-top:20px;">
+        <button style="padding:10px 20px;margin:10px;font-size:16px;cursor:pointer;" onclick="startSinglePractice()">单选题练习</button>
+        <br>
+        <button style="padding:10px 20px;margin:10px;font-size:16px;cursor:pointer;" onclick="startJudgePractice()">判断题练习</button>
+        <br>
+        <button style="padding:10px 20px;margin:10px;font-size:16px;cursor:pointer;background:#f44336;color:white;" onclick="closeSpecialMenu()">返回</button>
+    </div>
+</div>
     <!-- 我的做题记录面板 - 重点修改部分 -->
     <div id="record-panel" class="panel">
         <button class="back-home" onclick="closePanel()">返回主页</button>
@@ -540,8 +554,9 @@ display: flex;
                 <button id="btn-import" onclick="importQuestions()">题库导入</button>
                 <button onclick="resetUsedQuestions()">题库重置</button>
                 <button id="btn-generate" onclick="generatePaper()">智能组卷</button>
+                <button id="btn-special" onclick="showSpecialMenu()">专项练习</button>
                 <button id="btn-practice" onclick="startPractice()">题库练习</button>
-<button id="btn-exit-practice" onclick="exitPractice()" style="background:#f44336;display:none;">退出题库练习</button>
+                <button id="btn-exit-practice" onclick="exitPractice()" style="background:#f44336;display:none;">退出题库练习</button>
                 <button onclick="showWrongPanel()">错题回顾</button>
                 <button onclick="showRecordPanel()">我的考试记录</button>
                 <button id="btn-start" onclick="startExam()">开始考试</button>
@@ -5052,25 +5067,29 @@ answer: 'D'
             document.getElementById('login-modal').style.display = 'flex';
         };
         // 错题存储
-        function getWrongList() {
-            const key = 'wrong_' + studentId;
-            return JSON.parse(localStorage.getItem(key)) || [];
-        }
+       function getWrongList() {
+    // 每个考生独立key：wrong_准考证号
+    const key = 'wrong_' + studentId;
+    return JSON.parse(localStorage.getItem(key)) || [];
+}
         function saveWrongList(list) {
             const key = 'wrong_' + studentId;
             localStorage.setItem(key, JSON.stringify(list));
         }
-        function addWrong(question, userAnswer) {
-            const list = getWrongList();
-            // 只添加答错的题目
-            if (userAnswer !== question.answer && !list.find(x => x.id === question.id)) {
-                list.push({
-                    ...question,
-                    userAnswer: userAnswer
-                });
-                saveWrongList(list);
-            }
-        }
+       function addWrong(question, userAnswer) {
+    const list = getWrongList();
+    // 关键：未答题(userAnswer===null) 不计入错题
+    if (userAnswer === null) return;
+
+    // 只存：答错、且未重复
+    if (userAnswer !== question.answer && !list.find(x => x.id === question.id)) {
+        list.push({
+            ...question,
+            userAnswer: userAnswer
+        });
+        saveWrongList(list);
+    }
+}
         // 面板控制
         function showRecordPanel() {
             document.querySelector('.container').style.display = 'none';
@@ -5659,12 +5678,21 @@ document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;
             
             let optionsHtml = '';
             q.options.forEach((opt, optIndex) => {
-                optionsHtml += `
-                    <div class="option-item" onclick="selectAnswer(${optIndex})" 
-                        ${answers[index] === opt.charAt(0) ? 'style="background-color: #e8f5e9; border-color: #4CAF50;"' : ''}>
-                        ${opt}
-                    </div>
-                `;
+               const userAns = answers[index];
+const trueAns = questions[currentQuestionIndex].answer;
+let cls = '';
+if (practiceMode && userAns !== null) {
+  if (opt.charAt(0) === trueAns) {
+    cls = 'opt-correct'; // 正确：浅绿色
+  } else if (opt.charAt(0) === userAns) {
+    cls = 'opt-wrong';   // 选错：淡红色
+  }
+}
+optionsHtml += `
+    <div class="option-item ${cls}" onclick="selectAnswer(${optIndex})">
+        ${opt}
+    </div>
+`;
             });
             
             // 显示正确答案（练习模式或考试结束后）
@@ -5701,8 +5729,12 @@ document.querySelector('button[onclick="showRecordPanel()"]').disabled = false;
                 showQuestion(currentQuestionIndex);
             }
 if (examStarted && !practiceMode) {
-        nextQuestion();
-        }
+    nextQuestion();
+}
+// 练习模式：选完刷新颜色
+if (practiceMode) {
+    showQuestion(currentQuestionIndex);
+}
      }   
         function prevQuestion() {
             if (currentQuestionIndex > 0) {
@@ -5820,6 +5852,54 @@ function adminPreviewQuestions() {
 const savedQuestions = localStorage.getItem('allQuestions');
 if (savedQuestions) {
     allQuestions = JSON.parse(savedQuestions);
+}
+// 显示专项练习菜单
+function showSpecialMenu() {
+    document.getElementById('special-menu').style.display = 'block';
+}
+// 关闭专项练习菜单
+function closeSpecialMenu() {
+    document.getElementById('special-menu').style.display = 'none';
+}
+// 单选题专项练习
+function startSinglePractice() {
+    closeSpecialMenu();
+    practiceMode = true;
+    examStarted = false;
+    examSubmitted = false;
+    const singleList = allQuestions.filter(q => q.type === '单选题');
+    if (singleList.length === 0) {
+        alert('暂无单选题题库');
+        return;
+    }
+    questions = [...singleList];
+    answers = new Array(questions.length).fill(null);
+    renderQuestionNav();
+    showQuestion(0);
+    updateAnsweredCount();
+    document.getElementById('btn-exit-practice').style.display = 'inline-block';
+    document.getElementById('answered-display').style.display = 'block';
+    alert('已进入单选题专项练习，共' + questions.length + '题');
+}
+// 判断题专项练习
+function startJudgePractice() {
+    closeSpecialMenu();
+    practiceMode = true;
+    examStarted = false;
+    examSubmitted = false;
+    const judgeList = allQuestions.filter(q => q.type === '判断题');
+    if (judgeList.length === 0) {
+        alert('暂无判断题题库');
+        return;
+    }
+    questions = [...judgeList];
+    answers = new Array(questions.length).fill(null);
+    renderQuestionNav();
+    showQuestion(0);
+    updateAnsweredCount();
+    document.getElementById('btn-exit-practice').style.display = 'inline-block';
+    document.getElementById('answered-display').style.display = 'block';
+    alert('已进入判断题专项练习，共' + questions.length + '题');
 }
     </script>
 </body>
